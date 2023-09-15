@@ -137,6 +137,4 @@ class G:
 
 
 if __name__ == '__main__':
-    # Parse command line arguments
-    graph = Fire(G)
-    graph.add_day_of_coverage("2023-08-12")
+    graph = G("/share/ju/nexar_data/nexar-scraper","/share/ju/urbankeg/")
