@@ -12,7 +12,7 @@ import os
 from glob import glob 
 from concurrent.futures import ProcessPoolExecutor
 from fire import Fire
-
+from tqdm import tqdm
 
 # Set up logging
 import logging
@@ -24,14 +24,83 @@ NUM_CORES = os.getenv("SLURM_CPUS_ON_NODE")
 # Check if none
 if NUM_CORES is None:
     # Set to 8
-    NUM_CORES = 6
+    NUM_CORES = 24
+else: 
+    NUM_CORES *= 2
 
-class G: 
+
+class DayOfCoverage:
+    """
+    A class to represent a day of coverage from the Nexar dataset. 
+
+    ...
+
+    Attributes 
+    ----------
+    date : str
+        The date of the day of coverage, in the format YYYY-MM-DD
+    frames_data : pd.DataFrame
+        A pandas dataframe containing the metadata for all frames in the day of coverage.
+    nearest_edges : pd.DataFrame
+        A pandas dataframe containing the nearest edges to each frame in frames_data.
+    nearest_edges_dist : pd.DataFrame
+        A pandas dataframe containing the distance to the nearest edge for each frame in frames_data.
+    
+    Methods
+    -------
+    None
+    """
+    def __init__(self, day_of_coverage):
+        self.date = day_of_coverage 
+        self.frames_data = [] 
+        self.nearest_edges = [] 
+        self.nearest_edges_dist = []
+
+
+class G:
+    """
+    A class to represent a graph G, and a set of annotated dashcam frames F, and generate commodity densities for each road in G.
+
+    ...
+
+    Attributes
+    ----------
+    PROJ_PATH : str
+        The path to the root of the Nexar dataset.
+    days_of_coverage : list
+        A list of DayOfCoverage objects, each representing a day of coverage from the Nexar dataset.
+    geo : ox.graph
+        The graph of the city, loaded from a graphml file.
+    gdf_nodes : gpd.GeoDataFrame
+        A GeoDataFrame containing the nodes of the graph.
+    gdf_edges : gpd.GeoDataFrame
+        A GeoDataFrame containing the edges of the graph.
+    
+    Methods
+    -------
+    get_frames_worker(folder)
+        A worker function for get_data, which loads all frames in a given folder.
+    get_md_worker(md_csv)
+        A worker function for get_data, which loads the metadata for a given folder.
+    get_data(day_of_coverage, num_workers=8)
+        Loads the frames and metadata for a day of coverage from the Nexar dataset.
+    load_day_of_coverage(day_of_coverage)
+        Loads the metadata for a day of coverage from the Nexar dataset.
+    add_day_of_coverage(day_of_coverage)
+        Adds a day of coverage to the graph.
+    get_day_of_coverage(day_of_coverage)
+        Returns the DayOfCoverage object for a given day of coverage.
+    nearest_road_worker(subset)
+        A worker function for coverage_to_nearest_road, which finds the nearest road to each frame in a subset of the metadata.
+    coverage_to_nearest_road(day_of_coverage)
+        Finds the nearest road to each frame in a day of coverage.
+    
+    """ 
     def __init__(self, proj_path, graphml_input):
         self.log = logging.getLogger(__name__)
         self.log.info(f'Loading graph at path {graphml_input}')
         self.PROJ_PATH = proj_path 
-        self.days_of_coverage = {}
+        self.days_of_coverage = []
         self.geo = ox.io.load_graphml(graphml_input)
         self.gdf_nodes = ox.utils_graph.graph_to_gdfs(self.geo, edges=False)
         self.gdf_edges = ox.utils_graph.graph_to_gdfs(self.geo, nodes=False)
@@ -65,10 +134,11 @@ class G:
                 self.log.warning(f"Metadata CSV: {md_csv} does not exist.")
     
             # Read CSV
-            df = pd.read_csv(md_csv)
+            df = pd.read_csv(md_csv, engine='pyarrow')
+            gdf = gpd.GeoDataFrame(df, geometry=gpd.points_from_xy(df["gps_info.longitude"], df["gps_info.latitude"], crs="EPSG:4326"))
+            gdf = gdf.to_crs("EPSG:2263")
     
-            # Return length of CSV
-            return df
+            return gdf
 
     def get_data(self, day_of_coverage, num_workers=8):
         # Glob all h3-6 hexagon directories within the given day of coverage 
@@ -131,10 +201,62 @@ class G:
         
 
     def add_day_of_coverage(self, day_of_coverage): 
-        self.days_of_coverage[day_of_coverage] = self.load_day_of_coverage(day_of_coverage)
-        self.log.info(f"Added day of coverage {day_of_coverage} to graph, with {len(self.days_of_coverage[day_of_coverage].index)} rows.")
+        DoC = DayOfCoverage(day_of_coverage)
+        DoC.frames_data = self.get_data(day_of_coverage)
+        self.days_of_coverage.append(DoC)
+        self.log.info(f"Added day of coverage {day_of_coverage} to graph, with {len(DoC.frames_data.index)} rows.")
 
+    def get_day_of_coverage(self, day_of_coverage):
+        for DoC in self.days_of_coverage:
+            if DoC.date == day_of_coverage:
+                return DoC
+        else:
+            self.log.error(f"Day of coverage {day_of_coverage} not stored in graph.")
+            return 4
+
+    
+    def nearest_road_worker(self, subset): 
+        # Get nearest edge for each row in md 
+        nearest_edges = ox.distance.nearest_edges(self.geo, subset.geometry.x, subset.geometry.y, return_dist=True)
+
+        return nearest_edges
+
+    def coverage_to_nearest_road(self, day_of_coverage): 
+        # Check if day of coverage is in graph
+        DoC = self.get_day_of_coverage(day_of_coverage)
+
+        # Get day of coverage data
+        md = self.get_day_of_coverage(day_of_coverage).frames_data
+        md = md.sample(frac=0.1)
+
+        # Split md into 8 * 100 = 800 chunks 
+        md_split = np.array_split(md, 80)
+        # Allocate a ProcessPoolExecutor with NUM_CORES
+        with tqdm(total=len(md_split)) as progress:   
+            with ProcessPoolExecutor(max_workers=NUM_CORES) as executor:
+                # Map nearest_road_worker to md_split
+                nearest = [] 
+                for ne in executor.map(self.nearest_road_worker, md_split):
+                    # Append to nearest_edges
+                    nearest.append(ne)
+                    # Update progress bar
+                    progress.update(1)
+
+                
+                nearest_edges, nearest_edges_dist = zip(*nearest)
+
+                nearest_edges = pd.DataFrame(nearest_edges)
+                nearest_edges_dist = pd.DataFrame(nearest_edges_dist)
+
+                DoC.nearest_edges = nearest_edges
+                DoC.nearest_edges_dist = nearest_edges_dist 
+            
+            self.log.info(f"Added nearest edges to day of coverage {day_of_coverage}.")
+            return 0
+        
 
 
 if __name__ == '__main__':
-    graph = G("/share/ju/nexar_data/nexar-scraper","/share/ju/urbankeg/")
+    graph = G("/share/ju/nexar_data/nexar-scraper","/share/ju/urbanECG/data/geo/nyc.graphml")
+    graph.add_day_of_coverage("2023-08-12")
+    graph.coverage_to_nearest_road("2023-08-12")
