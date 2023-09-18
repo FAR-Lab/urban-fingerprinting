@@ -13,6 +13,8 @@ from glob import glob
 from concurrent.futures import ProcessPoolExecutor
 from fire import Fire
 from tqdm import tqdm
+import matplotlib.pyplot as plt
+import uuid 
 
 # Set up logging
 import logging
@@ -227,36 +229,68 @@ class G:
 
         # Get day of coverage data
         md = self.get_day_of_coverage(day_of_coverage).frames_data
-        md = md.sample(frac=0.1)
+        md = md.sample(frac=0.01)
 
         # Split md into 8 * 100 = 800 chunks 
-        md_split = np.array_split(md, 80)
+        md_split = np.array_split(md, 8)
         # Allocate a ProcessPoolExecutor with NUM_CORES
         with tqdm(total=len(md_split)) as progress:   
             with ProcessPoolExecutor(max_workers=NUM_CORES) as executor:
                 # Map nearest_road_worker to md_split
                 nearest = [] 
                 for ne in executor.map(self.nearest_road_worker, md_split):
-                    # Append to nearest_edges
+                    # Append to nearest_edges, making sure data stays in one column format 
                     nearest.append(ne)
+                  
                     # Update progress bar
                     progress.update(1)
 
-                
+                # Turn data into one column format
+                print(nearest[:1])
                 nearest_edges, nearest_edges_dist = zip(*nearest)
 
-                nearest_edges = pd.DataFrame(nearest_edges)
-                nearest_edges_dist = pd.DataFrame(nearest_edges_dist)
+                nearest_edges = [item for sublist in nearest_edges for item in sublist]
+                nearest_edges_dist = [item for sublist in nearest_edges_dist for item in sublist]
+                print(nearest_edges[:5])
+                print(nearest_edges_dist[:5])
+
+                
+
+                nearest_edges = pd.DataFrame(nearest_edges, columns=['u', 'v', 'key'])
+                nearest_edges['dist'] = nearest_edges_dist
+                print(nearest_edges.head())
 
                 DoC.nearest_edges = nearest_edges
-                DoC.nearest_edges_dist = nearest_edges_dist 
+
             
             self.log.info(f"Added nearest edges to day of coverage {day_of_coverage}.")
             return 0
-        
+    
+
+    def plot_edges(self): 
+        _, ax = plt.subplots(figsize=(10,10))
+        self.gdf_edges.plot(ax=ax, color='black', linewidth=0.5)
+        rID = uuid.uuid4().hex[:8]
+        plt.savefig(f"../../output/plots/edges_{rID}.png")
+        plt.close()
+    
+    def plot_coverage(self, day_of_coverage):
+        DoC = self.get_day_of_coverage(day_of_coverage)
+        _, ax = plt.subplots(figsize=(10,10))
+
+        # group by nearest edge, plot chloropleth 
+        print(DoC.nearest_edges.columns)
+        print(DoC.nearest_edges.head())
+        DoC.nearest_edges.groupby("u").size().plot(ax=ax, cmap='viridis', legend=True)
+
+        rID = uuid.uuid4().hex[:8]
+        plt.savefig(f"../../output/plots/coverage_{rID}.png")
+        plt.close()
 
 
 if __name__ == '__main__':
     graph = G("/share/ju/nexar_data/nexar-scraper","/share/ju/urbanECG/data/geo/nyc.graphml")
     graph.add_day_of_coverage("2023-08-12")
     graph.coverage_to_nearest_road("2023-08-12")
+    graph.plot_edges() 
+    graph.plot_coverage("2023-08-12")
