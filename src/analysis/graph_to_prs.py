@@ -99,6 +99,9 @@ class G:
     
     """ 
     def __init__(self, proj_path, graphml_input):
+
+        self.DEBUG_MODE = False 
+
         self.log = logging.getLogger(__name__)
         self.log.info(f'Loading graph at path {graphml_input}')
         self.PROJ_PATH = proj_path 
@@ -108,6 +111,10 @@ class G:
         self.gdf_edges = ox.utils_graph.graph_to_gdfs(self.geo, nodes=False)
         
         self.log.info("Graph loaded.")
+
+    def toggle_debug(self):
+        self.DEBUG_MODE = not self.DEBUG_MODE
+        self.log.info(f"Debug mode set to {self.DEBUG_MODE}.")
     
     def get_frames_worker(self, folder):
 
@@ -147,6 +154,9 @@ class G:
         hex_dirs = glob(os.path.join(self.PROJ_PATH, day_of_coverage, "*"))
         # remove any non-directories 
         hex_dirs = [x for x in hex_dirs if os.path.isdir(x)]
+
+        if self.DEBUG_MODE:
+            hex_dirs = hex_dirs[:1]
 
         self.log.info(f"Number of hex_dirs: {len(hex_dirs)}")
 
@@ -268,7 +278,7 @@ class G:
     
 
     def plot_edges(self): 
-        _, ax = plt.subplots(figsize=(10,10))
+        _, ax = plt.subplots(figsize=(20,20))
         self.gdf_edges.plot(ax=ax, color='black', linewidth=0.5)
         rID = uuid.uuid4().hex[:8]
         plt.savefig(f"../../output/plots/edges_{rID}.png")
@@ -276,12 +286,15 @@ class G:
     
     def plot_coverage(self, day_of_coverage):
         DoC = self.get_day_of_coverage(day_of_coverage)
-        _, ax = plt.subplots(figsize=(10,10))
+        _, ax = plt.subplots(figsize=(20,20))
 
         # group by nearest edge, plot chloropleth 
         print(DoC.nearest_edges.columns)
         print(DoC.nearest_edges.head())
-        DoC.nearest_edges.groupby("u").size().plot(ax=ax, cmap='viridis', legend=True)
+
+        coverage = DoC.nearest_edges.groupby(['u', 'v']).size().reset_index(name='counts')
+        self.gdf_edges.merge(coverage, on=['u', 'v'], how='left').fillna(0).plot(ax=ax, column='counts', cmap='viridis', linewidth=0.5, legend=True)
+        
 
         rID = uuid.uuid4().hex[:8]
         plt.savefig(f"../../output/plots/coverage_{rID}.png")
