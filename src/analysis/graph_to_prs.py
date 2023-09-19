@@ -15,6 +15,9 @@ from fire import Fire
 from tqdm import tqdm
 import matplotlib.pyplot as plt
 import uuid 
+from joblib import Parallel, delayed
+from itertools import chain 
+import datetime 
 
 # Set up logging
 import logging
@@ -26,7 +29,7 @@ NUM_CORES = os.getenv("SLURM_CPUS_ON_NODE")
 # Check if none
 if NUM_CORES is None:
     # Set to 8
-    NUM_CORES = 24
+    NUM_CORES = 8
 else: 
     NUM_CORES *= 2
 
@@ -101,7 +104,7 @@ class G:
     def __init__(self, proj_path, graphml_input):
 
         self.DEBUG_MODE = False 
-
+        self.WRITE_MODE = True 
         self.log = logging.getLogger(__name__)
         self.log.info(f'Loading graph at path {graphml_input}')
         self.PROJ_PATH = proj_path 
@@ -150,6 +153,15 @@ class G:
             return gdf
 
     def get_data(self, day_of_coverage, num_workers=8):
+
+        # Check if md file has already been written to output 
+        if os.path.exists(f"../../output/df/{day_of_coverage}/md.csv"):
+            # read md file from output 
+            md = pd.read_csv(f"../../output/df/{day_of_coverage}/md.csv", engine='pyarrow')
+            # return md
+            self.log.info(f"Loading metadata from output for day of coverage {day_of_coverage}.")
+            return md
+
         # Glob all h3-6 hexagon directories within the given day of coverage 
         hex_dirs = glob(os.path.join(self.PROJ_PATH, day_of_coverage, "*"))
         # remove any non-directories 
@@ -161,44 +173,49 @@ class G:
         self.log.info(f"Number of hex_dirs: {len(hex_dirs)}")
 
         # Allocate a ProcessPoolExecutor with num_workers
-        with ProcessPoolExecutor(max_workers=num_workers) as executor:
-            # create copy of hex_dirs that points to metadata CSVs
-            hex_dirs_md = hex_dirs.copy()
-            # glob the csv in each hex_dir
-            for i, hex_dir in enumerate(hex_dirs_md):
-                # get list of csvs in hex_dir
-                csvs = glob(os.path.join(self.PROJ_PATH, day_of_coverage, hex_dir, "*.csv"))
-                # check if there is more than one csv
-                if len(csvs) > 1:
-                    # raise error
-                    raise ValueError("More than one CSV in hex_dir.")
-                # check if there is no csv
-                elif len(csvs) == 0:
-                    # log warning 
-                    self.log.warning(f"No CSV in hex_dir: {hex_dir}")
-                    # set hex_dirs_md[i] to None
-                    hex_dirs_md[i] = None
-                else:
-                    # grab path of first csv 
-                    hex_dirs_md[i] = csvs[0]
+        
+        # create copy of hex_dirs that points to metadata CSVs
+        hex_dirs_md = hex_dirs.copy()
+        # glob the csv in each hex_dir
+        for i, hex_dir in enumerate(hex_dirs_md):
+            # get list of csvs in hex_dir
+            csvs = glob(os.path.join(self.PROJ_PATH, day_of_coverage, hex_dir, "*.csv"))
+            # check if there is more than one csv
+            if len(csvs) > 1:
+                # raise error
+                raise ValueError("More than one CSV in hex_dir.")
+            # check if there is no csv
+            elif len(csvs) == 0:
+                # log warning 
+                self.log.warning(f"No CSV in hex_dir: {hex_dir}")
+                # set hex_dirs_md[i] to None
+                hex_dirs_md[i] = None
+            else:
+                # grab path of first csv 
+                hex_dirs_md[i] = csvs[0]
 
-            self.log.info("Loading frames and metadata...")
-            frames = executor.map(self.get_frames_worker, hex_dirs)
-            frames = [item for sublist in frames for item in sublist]
-            self.log.info(f"All frames loaded. Number of frames: {len(frames)}")
+        self.log.info("Loading frames and metadata...")
+        frames = Parallel(n_jobs=NUM_CORES)(delayed(self.get_frames_worker)(folder) for folder in tqdm(hex_dirs))
+        frames = list(chain.from_iterable(frames))
+        self.log.info(f"All frames loaded. Number of frames: {len(frames)}")
 
-            # Map get_md_counts_worker to all hex_dirs_md
-            md = executor.map(self.get_md_worker, hex_dirs_md)
-            md = pd.concat(md)
-            self.log.info(f"All metadata loaded. Number of rows in md: {len(md.index)}")
+        # Map get_md_counts_worker to all hex_dirs_md
+        md = Parallel(n_jobs=NUM_CORES)(delayed(self.get_md_worker)(md_csv) for md_csv in tqdm(hex_dirs_md))
+        md = pd.concat(md)
+        self.log.info(f"All metadata loaded. Number of rows in md: {len(md.index)}")
 
 
-          
-            # get frame ids from frames list 
-            frame_ids = [x.split("/")[-1].split(".")[0] for x in frames]
-            # filter md list to only include rows in frame_ids 
-            md = md[md["frame_id"].isin(frame_ids)]
+        
+        # get frame ids from frames list 
+        frame_ids = [x.split("/")[-1].split(".")[0] for x in frames]
+        # filter md list to only include rows in frame_ids 
+        md = md[md["frame_id"].isin(frame_ids)]
        
+        if self.WRITE_MODE:
+            os.makedirs(f"../../output/df/{day_of_coverage}", exist_ok=True)
+            md.to_csv(f"../../output/df/{day_of_coverage}/md.csv")
+            self.log.info(f"Wrote metadata to output for day of coverage {day_of_coverage}.")
+
 
         # return md for day of coverage
         return md
@@ -234,47 +251,48 @@ class G:
         return nearest_edges
 
     def coverage_to_nearest_road(self, day_of_coverage): 
+
+        
+
         # Check if day of coverage is in graph
         DoC = self.get_day_of_coverage(day_of_coverage)
 
         # Get day of coverage data
         md = self.get_day_of_coverage(day_of_coverage).frames_data
-        md = md.sample(frac=0.01)
 
-        # Split md into 8 * 100 = 800 chunks 
-        md_split = np.array_split(md, 8)
-        # Allocate a ProcessPoolExecutor with NUM_CORES
-        with tqdm(total=len(md_split)) as progress:   
-            with ProcessPoolExecutor(max_workers=NUM_CORES) as executor:
-                # Map nearest_road_worker to md_split
-                nearest = [] 
-                for ne in executor.map(self.nearest_road_worker, md_split):
-                    # Append to nearest_edges, making sure data stays in one column format 
-                    nearest.append(ne)
-                  
-                    # Update progress bar
-                    progress.update(1)
-
-                # Turn data into one column format
-                print(nearest[:1])
-                nearest_edges, nearest_edges_dist = zip(*nearest)
-
-                nearest_edges = [item for sublist in nearest_edges for item in sublist]
-                nearest_edges_dist = [item for sublist in nearest_edges_dist for item in sublist]
-                print(nearest_edges[:5])
-                print(nearest_edges_dist[:5])
-
-                
-
-                nearest_edges = pd.DataFrame(nearest_edges, columns=['u', 'v', 'key'])
-                nearest_edges['dist'] = nearest_edges_dist
-                print(nearest_edges.head())
-
-                DoC.nearest_edges = nearest_edges
-
-            
-            self.log.info(f"Added nearest edges to day of coverage {day_of_coverage}.")
+        # Check if nearest edges have already been written to output
+        if os.path.exists(f"../../output/df/{day_of_coverage}/nearest_edges.csv"):
+            # read nearest edges from output 
+            nearest_edges = pd.read_csv(f"../../output/df/{day_of_coverage}/nearest_edges.csv", engine='pyarrow')
+            # return nearest edges
+            self.log.info(f"Loading nearest edges from output for day of coverage {day_of_coverage}.")
+            DoC.nearest_edges = nearest_edges
             return 0
+
+        md_split = np.array_split(md, 10 * NUM_CORES)
+
+        nearest = Parallel(n_jobs=NUM_CORES)(delayed(self.nearest_road_worker)(subset) for subset in tqdm(md_split))
+        nearest_edges, nearest_edges_dist = zip(*nearest)
+
+        nearest_edges = [item for sublist in nearest_edges for item in sublist]
+        nearest_edges_dist = [item for sublist in nearest_edges_dist for item in sublist]
+        print(nearest_edges[:5])
+        print(nearest_edges_dist[:5])
+
+        nearest_edges = pd.DataFrame(nearest_edges, columns=['u', 'v', 'key'])
+        nearest_edges['dist'] = nearest_edges_dist
+        print(nearest_edges.head())
+
+        DoC.nearest_edges = nearest_edges
+
+        if self.WRITE_MODE:
+            os.makedirs(f"../../output/df/{day_of_coverage}", exist_ok=True)
+            nearest_edges.to_csv(f"../../output/df/{day_of_coverage}/nearest_edges.csv")
+            self.log.info(f"Wrote nearest edges to output for day of coverage {day_of_coverage}.")
+
+    
+        self.log.info(f"Added nearest edges to day of coverage {day_of_coverage}.")
+        return 0
     
 
     def plot_edges(self): 
@@ -293,11 +311,16 @@ class G:
         print(DoC.nearest_edges.head())
 
         coverage = DoC.nearest_edges.groupby(['u', 'v']).size().reset_index(name='counts')
-        self.gdf_edges.merge(coverage, on=['u', 'v'], how='left').fillna(0).plot(ax=ax, column='counts', cmap='viridis', linewidth=0.5, legend=True)
+        self.gdf_edges.plot(ax=ax, color='black', linewidth=0.5)
+        self.gdf_edges.merge(coverage, on=['u', 'v'], how='left').plot(ax=ax, column='counts', cmap='viridis', linewidth=0.5, legend=True,
+                                                                                 legend_kwds={'label': "Number of frames", 'orientation': "horizontal"})
         
+        ax.set_axis_off()
+        ax.set_title(f"Coverage for {day_of_coverage}")
 
-        rID = uuid.uuid4().hex[:8]
-        plt.savefig(f"../../output/plots/coverage_{rID}.png")
+
+        rID = datetime.datetime.now().strftime("%Y-%m-%d_%H:%M:%S")
+        plt.savefig(f"../../output/plots/coverage_{rID}.png", bbox_inches='tight', pad_inches=0)
         plt.close()
 
 
