@@ -1,4 +1,4 @@
-# %%
+
 import pandas as pd 
 import matplotlib.pyplot as plt 
 
@@ -11,7 +11,17 @@ import os
 
 from tqdm import tqdm
 
-# %%
+import fire
+
+import numpy as np
+from collections import Counter
+from functools import reduce 
+import operator
+from itertools import chain 
+
+from joblib import Parallel, delayed
+
+
 class ColorfulFormatter(logging.Formatter):
     COLORS = {
         'DEBUG': 'blue',
@@ -47,78 +57,110 @@ def setup_logger():
     logger.addHandler(ch)
     return logger
 
-log = setup_logger()
 
 
-log.info("Start of notebook.")
+class Parser(): 
+    def __init__(self, PROJ_PATH, DAY_OF_COVERAGE): 
+        self.log = setup_logger()
 
-# %%
-PROJ_PATH = '/share/ju/nexar_data/nexar-scraper'
-SAMPLE_TO_ANL = '2023-08-13'
+        self.NUM_CORES = int(os.getenv("SLURM_CPUS_ON_NODE")) or 30
 
-# %%
-preds_regex = f"{PROJ_PATH}/{SAMPLE_TO_ANL}/*/*/uf_detections/exp/labels/*.txt"
-imgs_regex = f"{PROJ_PATH}/{SAMPLE_TO_ANL}/*/*/*.jpg"
-
-# %%
-preds_list = glob(preds_regex)
-log.info(f"Number of detected predictions: {len(preds_list)}")
-
-# %%
-# Function to extract yhat from the given file path
-def extract_w_conf(file_path):
-    d = pd.read_csv(file_path, 
-                    sep=' ', 
-                    names=['class_type', 'dummy1', 'dummy2', 'dummy3', 'dummy4', 'conf'])
+        self.PROJ_PATH = PROJ_PATH
+        self.DAY_OF_COVERAGE = DAY_OF_COVERAGE
     
-    d = d[['class_type', 'conf']]
-    d = d.groupby('class_type').agg('size')
+        self.PREDICTIONS_REGEX = f"{PROJ_PATH}/{DAY_OF_COVERAGE}/*/*/uf_detections/exp/labels/*.txt"
+        self.IMAGES_REGEX = f"{PROJ_PATH}/{DAY_OF_COVERAGE}/*/*/*.jpg"  
 
-    # set all columns names to string versions of the class id 
-    d = d.to_frame().T
-    d.columns = [str(x) for x in d.columns]
+        self.IMAGES_LIST = glob(self.IMAGES_REGEX)
+        self.log.info(f"Number of images for {self.DAY_OF_COVERAGE}: {len(self.IMAGES_LIST)}")
+        self.PREDICTIONS_LIST = glob(self.PREDICTIONS_REGEX)
+        self.log.info(f"Number of detected predictions for {self.DAY_OF_COVERAGE}: {len(self.PREDICTIONS_LIST)}")
 
-    d['frame_id'] = file_path.split('/')[-1].split('.')[0]
+        self.ALL_PREDICTIONS = pd.DataFrame(self.PREDICTIONS_LIST)
+        self.ALL_PREDICTIONS.columns = ['path']
+        self.ALL_PREDICTIONS['frame_id'] = self.ALL_PREDICTIONS['path'].str.split('/').str[-1].str.split('.').str[0]
+        self.ALL_PREDICTIONS = self.ALL_PREDICTIONS.set_index('frame_id')
 
-    d = d.set_index('frame_id')
+        self.check_preds_paths()
 
-    return d 
+
+    def quick_extract(self, file_path): 
+        # Read the file
+        with open(file_path, 'r') as file:
+            lines = file.readlines()
+
+            # Extract the values from the first column and count their occurrences
+            first_column_values = [line.split()[0] for line in lines]
+            counted_values = Counter(first_column_values).items()
+            frame_id = file_path.split('/')[-1].split('.')[0]
+            return {frame_id: dict(counted_values)}
+        
     
 
+    def quick_extract_worker(self, subset): 
+        counters = []
+        for path in tqdm(subset): 
+            counters.append(self.quick_extract(path))
+        return counters
+
+    # Function to extract yhat from the given file path
+    def extract_w_conf(self, file_path):
+        d = pd.read_csv(file_path, 
+                        sep=' ', 
+                        names=['class_type', 'dummy1', 'dummy2', 'dummy3', 'dummy4', 'conf'], engine='pyarrow')
+        
+        d = d[['class_type', 'conf']]
+        d = d.groupby('class_type').agg('size')
+
+        # set all columns names to string versions of the class id 
+        d = d.to_frame().T
+        d.columns = [str(x) for x in d.columns]
+
+        d['frame_id'] = file_path.split('/')[-1].split('.')[0]
+
+        d = d.set_index('frame_id')
+
+        d_dict = d.to_dict(orient='tight')
+        del d 
+        return d_dict
+
+    
+    def check_preds_paths(self): 
+        len_before_drop = len(self.ALL_PREDICTIONS)
+        existing_paths = self.ALL_PREDICTIONS['path'].apply(os.path.exists)
+        self.ALL_PREDICTIONS = self.ALL_PREDICTIONS[existing_paths]
+        len_after_drop = len(self.ALL_PREDICTIONS)
+        if len_before_drop != len_after_drop:
+            self.log.warning(f'Dropped {len_before_drop - len_after_drop} rows due to missing paths')
+    
+    def parse(self): 
+        subsets = np.array_split(self.ALL_PREDICTIONS['path'].tolist(), 96)
+        self.ALL_DETECTIONS = Parallel(n_jobs=self.NUM_CORES)(delayed(self.quick_extract_worker)(subset) for subset in tqdm(subsets, desc="Processing batches"))
+        self.ALL_DETECTIONS = list(chain(*self.ALL_DETECTIONS))
+        print(self.ALL_DETECTIONS[:10])
+        self.ALL_DETECTIONS = pd.concat([pd.DataFrame(l) for l in tqdm(self.ALL_DETECTIONS, desc='Creating detections dataframe...')], axis=1).T
+
+        # drop path column 
+        self.ALL_PREDICTIONS = self.ALL_PREDICTIONS.drop(columns=['path'])
+        # turn columns with numbers into ints, but leave string columns alone
+        # turn column names with numbers into ints 
 
 
-# %%
-pd.concat([extract_w_conf(preds_list[0]), extract_w_conf(preds_list[1])])
+        self.ALL_DETECTIONS.columns = self.ALL_DETECTIONS.columns.map(int)
 
+        # sort columns by class id 
+        self.ALL_DETECTIONS = self.ALL_DETECTIONS.reindex(sorted(self.ALL_DETECTIONS.columns), axis=1)
 
-# %%
+        self.ALL_PREDICTIONS.merge(self.ALL_DETECTIONS, left_index=True, right_index=True).to_csv(f'../../output/df/{self.DAY_OF_COVERAGE}/detections.csv')
 
-all_preds = pd.DataFrame(preds_list)
-all_preds.columns = ['path']
-all_preds['frame_id'] = all_preds['path'].str.split('/').str[-1].str.split('.').str[0]
+        if len(self.ALL_DETECTIONS) != len(self.ALL_PREDICTIONS): 
+            self.log.error(f"Number of detections ({len(self.ALL_DETECTIONS)}) does not match number of predictions ({len(self.ALL_PREDICTIONS)})")
+  
+        self.log.info(f"Saved detections for {self.DAY_OF_COVERAGE} to disk.")
 
-all_preds = all_preds.set_index('frame_id')
+if __name__=='__main__':
+    p = Parser("/share/ju/nexar_data/nexar-scraper", "2023-08-12")
+    p.parse()
 
-# Use a parallel process to apply the function to each file path
-def parallel_yhat_extraction(paths, num_processes=64):
-    with ProcessPoolExecutor(max_workers=num_processes) as executor:
-        results = list(tqdm(executor.map(extract_w_conf, paths), total=len(paths), desc="Processing files"))
-        results = pd.concat(results)
-    return results
-
-len_before_drop = len(all_preds)
-existing_paths = all_preds['path'].apply(os.path.exists)
-all_preds = all_preds[existing_paths]
-len_after_drop = len(all_preds)
-if len_before_drop != len_after_drop:
-    log.warning(f'Dropped {len_before_drop - len_after_drop} rows due to missing paths')
-
-all_preds_vals = parallel_yhat_extraction(all_preds['path'].tolist())
-
-all_preds = all_preds.merge(all_preds_vals, left_index=True, right_index=True)
-
-
-# %%
-all_preds.to_csv('/share/ju/nexar_data/nexar-scraper/fingerprinting/08-13-2023-detections.csv')
 
 
