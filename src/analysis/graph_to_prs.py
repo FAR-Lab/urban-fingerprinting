@@ -10,7 +10,7 @@ import geopandas as gpd
 import osmnx as ox 
 import os
 from glob import glob 
-from concurrent.futures import ProcessPoolExecutor
+
 from fire import Fire
 from tqdm import tqdm
 import matplotlib.pyplot as plt
@@ -304,19 +304,27 @@ class G:
     
     def plot_coverage(self, day_of_coverage):
         DoC = self.get_day_of_coverage(day_of_coverage)
-        _, ax = plt.subplots(figsize=(20,20))
+        _, ax = plt.subplots(figsize=(30,30), frameon=False)
 
         # group by nearest edge, plot chloropleth 
         print(DoC.nearest_edges.columns)
         print(DoC.nearest_edges.head())
 
         coverage = DoC.nearest_edges.groupby(['u', 'v']).size().reset_index(name='counts')
-        self.gdf_edges.plot(ax=ax, color='black', linewidth=0.5)
-        self.gdf_edges.merge(coverage, on=['u', 'v'], how='left').plot(ax=ax, column='counts', cmap='viridis', linewidth=0.5, legend=True,
+
+
+
+        coverage['binned'] = pd.qcut(coverage['counts'], 100, labels=False, duplicates='drop')
+        
+
+        self.gdf_edges.plot(ax=ax, color='lightcoral', linewidth=0.5)
+        self.gdf_edges.merge(coverage, on=['u', 'v'], how='left').plot(ax=ax, column='binned', cmap='cividis', linewidth=0.5, legend=True,
                                                                                  legend_kwds={'label': "Number of frames", 'orientation': "horizontal"})
         
         ax.set_axis_off()
+        ax.margins(0)
         ax.set_title(f"Coverage for {day_of_coverage}")
+        ax.title.set_size(50)
 
 
         rID = datetime.datetime.now().strftime("%Y-%m-%d_%H:%M:%S")
@@ -328,5 +336,4 @@ if __name__ == '__main__':
     graph = G("/share/ju/nexar_data/nexar-scraper","/share/ju/urbanECG/data/geo/nyc.graphml")
     graph.add_day_of_coverage("2023-08-12")
     graph.coverage_to_nearest_road("2023-08-12")
-    graph.plot_edges() 
     graph.plot_coverage("2023-08-12")
