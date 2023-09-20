@@ -7,6 +7,12 @@ def pull_nyc_graph():
     logging.info("Pulling graph of NYC from OSM.")
     G = ox.graph_from_place("New York City, New York, USA", network_type="drive")
     logging.info("Graph of NYC pulled from OSM.")
+
+    # Project graph to EPSG:2263
+    logging.info("Projecting graph of NYC to EPSG:2263.")
+    G = ox.projection.project_graph(G, to_crs="EPSG:2263")
+    logging.info("Graph of NYC projected to EPSG:2263.")
+
     # Make sure data/geo directory exists
     if not os.path.exists("../../data/geo"):
         os.makedirs("../../data/geo")
