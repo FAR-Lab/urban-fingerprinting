@@ -5,18 +5,21 @@
 #SBATCH --mail-type=ALL 
 #SBATCH --mail-user=mwf62@cornell.edu 
 #SBATCH -N 1
-#SBATCH -n 8
+#SBATCH -n 4
 #SBATCH --get-user-env 
-#SBATCH --mem=64gb
-#SBATCH --gpus=4
+#SBATCH --mem=16gb
 #SBATCH -t 400:00:00 
 #SBATCH --partition=pierson
 
 pwd
 source /home/mwf62/.bashrc
  
-conda info --envs
-source activate /share/pierson/conda_virtualenvs/policing_env
+source activate /share/ju/conda_virtualenvs/yolo-inference-urbanekg
+
 cd /share/ju/urbanECG/src/cv
 
 python detector.py $1 $2
+sbatch detect_worker.sub $2 0
+sbatch detect_worker.sub $2 1
+sbatch detect_worker.sub $2 2
+sbatch detect_worker.sub $2 3
