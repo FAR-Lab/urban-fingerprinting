@@ -29,6 +29,7 @@ from shapely import wkt
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 from utils import coco_mappings as cm
+from visualization import AnimatedMap as am
 from DayOfCoverage import DayOfCoverage
 
 
@@ -357,6 +358,14 @@ class G:
         self.add_detections(doc)
 
         self.log.info(f"Added {doc} to graph.")
+    
+    def generate_gif(self, DoCs): 
+        gif = am.AnimatedChloropleth(self, DoCs)
+        gif.set_roads(self.geo)
+        gif.generate_frames("captured_at", "2", "10min", "bin", car_offset=True)
+        gif.generate_gif()
+
+
 
 
 
@@ -364,12 +373,14 @@ class G:
 
 
 if __name__ == '__main__':
-    days_of_coverage = ["2023-08-10", "2023-08-11", "2023-08-12", "2023-08-13", "2023-08-14", "2023-08-17", "2023-08-18", "2023-08-20", "2023-08-21", "2023-08-22", "2023-08-23", "2023-08-24", "2023-08-28", "2023-08-29", "2023-08-30", "2023-08-31"]
+    #days_of_coverage = ["2023-08-10", "2023-08-11", "2023-08-12", "2023-08-13", "2023-08-14", "2023-08-17", "2023-08-18", "2023-08-20", "2023-08-21", "2023-08-22", "2023-08-23", "2023-08-24", "2023-08-28", "2023-08-29", "2023-08-30", "2023-08-31"]
+    days_of_coverage = ["2023-08-10", "2023-08-11", "2023-08-12"]
     graph = G("/share/ju/nexar_data/nexar-scraper","/share/ju/urbanECG/data/geo/nyc.graphml")
     for day in days_of_coverage:
         try:
             graph.init_day_of_coverage(day)
         except Exception as e:
             graph.log.error(f"Error in {day}: {e}")
+    graph.generate_gif(days_of_coverage)
    
 
