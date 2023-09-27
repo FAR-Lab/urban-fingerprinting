@@ -18,6 +18,8 @@ import contextlib
 from fire import Fire
 from tqdm import tqdm
 import matplotlib.pyplot as plt
+import matplotlib.style as mplstyle
+mplstyle.use(['ggplot', 'fast'])
 import uuid 
 from joblib import Parallel, delayed
 from itertools import chain 
@@ -486,7 +488,7 @@ class G:
 
 
 
-    def plot_density_per_road_segment(self, output_dir, DoCs, bin, density, class_id, binned=True, car_offset=False): 
+    def plot_density_per_road_segment(self, output_dir, DoCs, delta, bin, density, class_id, ax_bounds=(0,100), binned=True, car_offset=False): 
 
         density = self.gdf_edges.merge(density, on=['u', 'v'], how='left')
         density = density.to_crs("EPSG:2263")
@@ -502,25 +504,11 @@ class G:
         density['binned'] = density['binned'].apply(lambda x: x.right)
 
 
+        norm, cmap = self.colorbar_norm_cmap(ax_bounds)
 
+        density.plot(ax=ax, column='binned' if binned else str(class_id), cmap=cmap, linewidth=2, legend=False)
 
-        density.plot(ax=ax, column='binned' if binned else str(class_id), cmap='BuPu', linewidth=1.5, legend=False)
-
-        # create custom legend based on bins 
-        bins = list(density['binned'].unique())
-        bins.sort()
         
-        # create custom, continuous legend 
-        # create a color map
-        cmap = plt.cm.BuPu
-        # extract all colors from the .jet map
-        cmaplist = [cmap(i) for i in range(cmap.N)]
-        # create the new map
-        cmap = cmap.from_list('Custom cmap', cmaplist, cmap.N)
-       
-        # don't use bins, use a static min and max 
-        bounds = np.linspace(0, 1, 60)
-        norm = plt.Normalize(bounds.min(), bounds.max())   
         
         # create a second axes for the colorbar, on left side 
         ax2 = ax.figure.add_axes([0.05, 0.05, 0.03, 0.9])
@@ -551,6 +539,82 @@ class G:
         plt.close()
 
     
+    def compute_density_range(self, docs, class_id, dtbounds, delta, car_offset=False):
+
+        dtbounds = (dtbounds[0].astimezone(tz=pytz.timezone('America/New_York')), dtbounds[1].astimezone(tz=pytz.timezone('America/New_York')))
+
+        data = self.join_days(docs)
+        md = data.frames_data[['captured_at', 'frame_id']]
+        md = md[(md['captured_at'] >= dtbounds[0]) & (md['captured_at'] <= dtbounds[1])]
+
+        detections = data.detections
+        detections.set_index(detections.iloc[:,0], inplace=True)
+        detections.fillna(0, inplace=True)
+
+        md = md.merge(data.detections, left_on='frame_id', right_index=True)
+
+        md = md.merge(data.nearest_edges, left_on='frame_id', right_on='frame_id')
+
+        md['captured_at'] = md['captured_at'].dt.floor(delta)
+        subsets = md.groupby(['captured_at'])
+
+        bounds = [0,0]
+        # iterate through each subset
+        for _, subset in subsets:
+            # compute density of subset 
+            density = subset.groupby(['u', 'v']).agg(self.coco_agg_mappings(data=data)).reset_index()
+            # get min and max of density
+            min = density[str(class_id)].min()
+            max = density[str(class_id)].max()
+            # update bounds
+            if min < bounds[0]:
+                bounds[0] = min
+            if max > bounds[1]:
+                bounds[1] = max
+        
+        # SANITY CHECK: min should not be < 0 
+        if bounds[0] < 0:
+            raise ValueError(f"Min density is less than 0: {bounds[0]}")
+        
+
+        del md 
+        del detections 
+        del subsets 
+
+        return bounds
+
+
+
+
+        
+    def colorbar_norm_cmap(self, bounds):
+        
+        # create custom, continuous legend 
+        # create a color map
+        cmap = plt.cm.BuPu
+        # extract all colors from the .jet map
+        cmaplist = [cmap(i) for i in range(cmap.N)]
+        # create the new map
+        cmap = cmap.from_list('Custom cmap', cmaplist, cmap.N)
+
+        # define the bins and normalize
+        bounds
+        norm = plt.Normalize(bounds[0], bounds[-1])
+
+       
+        
+        return norm, cmap
+
+
+        
+        
+
+
+
+        
+
+
+
 
     def density_over_time_gif(self, docs, dtbounds, class_id, delta="60min", car_offset=True):
         class_id = str(class_id)
@@ -561,6 +625,9 @@ class G:
         bins = bins.tz_localize('America/New_York')
 
         output_dir = uuid.uuid4().hex[:8]
+
+        # generate cb norm and cmap 
+        bounds = self.compute_density_range(docs, class_id, dtbounds, delta, car_offset=car_offset)
 
         args = [] 
         for idx, bin in enumerate(bins): 
@@ -573,7 +640,7 @@ class G:
             plot_data = data.frames_data[(data.frames_data['captured_at'] >= dtbounds[0]) & (data.frames_data['captured_at'] <= dtbounds[1])]
             density = self.data2density(data, class_id, dtbounds, car_offset=car_offset)
             del plot_data 
-            args.append((output_dir, docs, bin, density, class_id, car_offset))
+            args.append((output_dir, docs, delta, bin, density, class_id, bounds, car_offset))
         
 
 
@@ -583,9 +650,9 @@ class G:
         self.generate_gif(output_dir, class_id, docs, delta)
         
     def plot_density_per_road_segment_parallel(self, args): 
-        output_dir, docs, bin, density, class_id, car_offset = args
+        output_dir, docs, delta, bin, density, class_id, bounds, car_offset = args
         try:
-            graph.plot_density_per_road_segment(output_dir, docs, bin, density, class_id, car_offset=car_offset)
+            graph.plot_density_per_road_segment(output_dir, docs, delta, bin, density, class_id, bounds, car_offset=car_offset)
             del args
             del density
         except Exception as e:
@@ -614,7 +681,7 @@ class G:
             img = next(imgs)
 
             img.save(fp=fp_out, format='GIF', append_images=imgs,
-                    save_all=True, duration=42, loop=0)
+                    save_all=True, duration=100, loop=0)
 
         
 
