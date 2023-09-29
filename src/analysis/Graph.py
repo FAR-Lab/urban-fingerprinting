@@ -539,11 +539,17 @@ class G:
         plt.close()
 
     
-    def compute_density_range(self, docs, class_id, dtbounds, delta, car_offset=False):
+    def compute_density_range(self, docs, class_id, dtbounds, delta, car_offset=False, time_of_day_merge=False):
+
+        if time_of_day_merge:
+            dtbounds = (dtbounds[0].replace(year=1970, month=1, day=1), dtbounds[1].replace(year=1970, month=1, day=1))
+            
+            data = self.merge_days(docs)
+        else:
+            data = self.join_days(docs)
 
         dtbounds = (dtbounds[0].astimezone(tz=pytz.timezone('America/New_York')), dtbounds[1].astimezone(tz=pytz.timezone('America/New_York')))
 
-        data = self.join_days(docs)
         md = data.frames_data[['captured_at', 'frame_id']]
         md = md[(md['captured_at'] >= dtbounds[0]) & (md['captured_at'] <= dtbounds[1])]
 
@@ -616,7 +622,7 @@ class G:
 
 
 
-    def density_over_time_gif(self, docs, dtbounds, class_id, delta="60min", car_offset=True):
+    def density_over_datetime_gif(self, docs, dtbounds, class_id, delta="60min", car_offset=False):
         class_id = str(class_id)
         data = self.join_days(docs)
 
@@ -632,11 +638,11 @@ class G:
         args = [] 
         for idx, bin in enumerate(bins): 
             # Sliding window 
-            if idx < 3: 
+            if idx < 6: 
                 dtbounds = (bins[0], bins[idx])
             else:
-                dtbounds = (bins[idx-3], bins[idx])
-            dtbounds = (bin, bin + pd.Timedelta(delta))
+                dtbounds = (bins[idx-6], bins[idx])
+            #dtbounds = (bin, bin + pd.Timedelta(delta))
             plot_data = data.frames_data[(data.frames_data['captured_at'] >= dtbounds[0]) & (data.frames_data['captured_at'] <= dtbounds[1])]
             density = self.data2density(data, class_id, dtbounds, car_offset=car_offset)
             del plot_data 
@@ -648,6 +654,99 @@ class G:
 
         # generate gif
         self.generate_gif(output_dir, class_id, docs, delta)
+
+
+    def merge_days(self, docs):
+        # Check if all days are in graph
+        for doc in docs:
+            if self.get_day_of_coverage(doc) == 4:
+                self.log.error(f"Day of coverage {doc} not in graph.")
+                return 4
+        
+        # Get nearest edges for each day of coverage
+        nearest_edges = []
+        for doc in docs:
+            nearest_edges.append(self.get_day_of_coverage(doc).nearest_edges)
+        
+        # Concatenate nearest edges 
+        nearest_edges = pd.concat(nearest_edges)
+
+        # Get detections for each day of coverage
+        detections = []
+        for doc in docs:
+            detections.append(self.get_day_of_coverage(doc).detections)
+        
+        # Concatenate detections
+        detections = pd.concat(detections)
+
+        # Get metadata for each day of coveragex
+        md = []
+        for doc in docs:
+            md.append(self.get_day_of_coverage(doc).frames_data)
+        
+        # Concatenate metadata
+        md = pd.concat(md)
+
+        
+
+        md['captured_at'] = pd.to_datetime(md['captured_at'], unit='ms')
+        md['captured_at'] = md['captured_at'].dt.tz_localize('UTC').dt.tz_convert('America/New_York')
+
+        # Strip date from captured_at, only leave time of day 
+        # Add jan 1 1970 to captured_at
+        md['captured_at'] = md['captured_at'].apply(lambda dt: dt.replace(year=1970, month=1, day=1))
+    
+        # Sort by captured_at
+        md = md.sort_values(by=['captured_at'])
+
+        return DayOfCoverage("merged", md, nearest_edges, detections)
+
+    
+    def density_over_time_of_day_gif(self, docs, tbounds, class_id, delta="60min", car_offset=False):
+        class_id = str(class_id)
+        data = self.merge_days(docs)
+        self.log.info(f"Merged days of coverage {docs} into one hypothetical of coverage.")
+
+        # add jan 1 1970 to tbounds
+        tbounds = (tbounds[0].replace(year=1970, month=1, day=1), tbounds[1].replace(year=1970, month=1, day=1))
+        
+        # localize tbounds in est 
+        tbounds = (tbounds[0].astimezone(tz=pytz.timezone('America/New_York')), tbounds[1].astimezone(tz=pytz.timezone('America/New_York')))
+
+        # generate time bins 
+        bins = pd.date_range(tbounds[0], tbounds[1], freq=delta)
+        #bins = bins.tz_localize('America/New_York')
+        self.log.info(f"Generated {len(bins)} bins.")
+
+        output_dir = uuid.uuid4().hex[:8]
+
+        # generate cb norm and cmap 
+        bounds = self.compute_density_range(docs, class_id, tbounds, delta, car_offset=car_offset, time_of_day_merge=True)
+        self.log.info(f"Computed density range for {docs}, lower bound: {bounds[0]}, upper bound: {bounds[1]}")
+
+        args = [] 
+        for idx, bin in tqdm(enumerate(bins), total=len(bins)): 
+            # Sliding window 
+            if idx < 6: 
+                tbounds = (bins[0], bins[idx])
+            else:
+                tbounds = (bins[idx-6], bins[idx])
+            #dtbounds = (bin, bin + pd.Timedelta(delta))
+            plot_data = data.frames_data[(data.frames_data['captured_at'] >= tbounds[0]) & (data.frames_data['captured_at'] <= tbounds[1])]
+            density = self.data2density(data, class_id, tbounds, car_offset=car_offset)
+            del plot_data 
+            args.append((output_dir, docs, delta, bin, density, class_id, bounds, car_offset))
+        
+        self.log.info(f"Generated {len(args)} arguments for plotting density per road segment.")
+        
+
+        self.log.info(f"Plotting density per road segment for {docs}.")
+        Parallel(n_jobs=NUM_CORES)(delayed(self.plot_density_per_road_segment_parallel)(arg) for arg in tqdm(args, desc="Plotting density per road segment."))
+
+        # generate gif
+        self.generate_gif(output_dir, class_id, docs, delta)
+
+
         
     def plot_density_per_road_segment_parallel(self, args): 
         output_dir, docs, delta, bin, density, class_id, bounds, car_offset = args
@@ -681,7 +780,7 @@ class G:
             img = next(imgs)
 
             img.save(fp=fp_out, format='GIF', append_images=imgs,
-                    save_all=True, duration=100, loop=0)
+                    save_all=True, duration=60, loop=0)
 
         
 
@@ -709,8 +808,6 @@ class G:
 
 
 
-
-
 if __name__ == '__main__':
     #days_of_coverage = ["2023-08-10", "2023-08-11", "2023-08-12", "2023-08-13", "2023-08-14", "2023-08-17", "2023-08-18", "2023-08-20", "2023-08-21", "2023-08-22", "2023-08-23", "2023-08-24", "2023-08-28", "2023-08-29", "2023-08-30", "2023-08-31"]
     days_of_coverage = ["2023-08-10", "2023-08-11", "2023-08-12"]
@@ -724,7 +821,9 @@ if __name__ == '__main__':
     #density = graph.density_per_road_segment(days_of_coverage, dtbounds=(datetime.datetime(2023,8,10,12,0,0), datetime.datetime(2023,8,10,14,0,0)))
     #graph.plot_density_per_road_segment(days_of_coverage, density, 2, car_offset=True)
 
-    graph.density_over_time_gif(days_of_coverage, (datetime.datetime(2023,8,10,1,0,0), datetime.datetime(2023,8,11,0,0,0)), 2, delta="10min", car_offset=True)    
+    #graph.density_over_datetime_gif(days_of_coverage, (datetime.datetime(2023,8,10,1,0,0), datetime.datetime(2023,8,11,0,0,0)), 2, delta="10min", car_offset=True)    
+
+    graph.density_over_time_of_day_gif(days_of_coverage, (datetime.datetime(2023,8,10,0,0,0), datetime.datetime(2023,8,10,23,59,59)), 2, delta="20min", car_offset=True)
 
    
 
