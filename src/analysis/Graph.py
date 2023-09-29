@@ -488,7 +488,7 @@ class G:
 
 
 
-    def plot_density_per_road_segment(self, output_dir, DoCs, delta, bin, density, class_id, ax_bounds=(0,100), binned=True, car_offset=False): 
+    def plot_density_per_road_segment(self, output_dir, DoCs, delta, bin, density, class_id, ax_bounds=(0,100), binned=True, car_offset=False, tod_flag=False): 
 
         density = self.gdf_edges.merge(density, on=['u', 'v'], how='left')
         density = density.to_crs("EPSG:2263")
@@ -527,7 +527,11 @@ class G:
 
         ax.set_axis_off()
         ax.margins(0)
-        ax.set_title(f"Average Num. of {cm.coco_classes[str(class_id)]}s per road segment \n {DoCs[0]}-{DoCs[-1]} \n {bin}")
+
+        if tod_flag: 
+            ax.set_title(f"Average Num. of {cm.coco_classes[str(class_id)]}s per road segment \n {DoCs[0]}-{DoCs[-1]} \n {bin.strftime('%H:%M')}")
+        else:
+            ax.set_title(f"Average Num. of {cm.coco_classes[str(class_id)]}s per road segment \n {DoCs[0]}-{DoCs[-1]} \n {bin}")
         ax.title.set_size(50)
         # Move title up 
         ax.title.set_position([.5, 1.05])
@@ -646,7 +650,8 @@ class G:
             plot_data = data.frames_data[(data.frames_data['captured_at'] >= dtbounds[0]) & (data.frames_data['captured_at'] <= dtbounds[1])]
             density = self.data2density(data, class_id, dtbounds, car_offset=car_offset)
             del plot_data 
-            args.append((output_dir, docs, delta, bin, density, class_id, bounds, car_offset))
+            tod_flag = False
+            args.append((output_dir, docs, delta, bin, density, class_id, bounds, car_offset, tod_flag))
         
 
 
@@ -735,7 +740,8 @@ class G:
             plot_data = data.frames_data[(data.frames_data['captured_at'] >= tbounds[0]) & (data.frames_data['captured_at'] <= tbounds[1])]
             density = self.data2density(data, class_id, tbounds, car_offset=car_offset)
             del plot_data 
-            args.append((output_dir, docs, delta, bin, density, class_id, bounds, car_offset))
+            tod_flag = True 
+            args.append((output_dir, docs, delta, bin, density, class_id, bounds, car_offset, tod_flag))
         
         self.log.info(f"Generated {len(args)} arguments for plotting density per road segment.")
         
@@ -749,9 +755,9 @@ class G:
 
         
     def plot_density_per_road_segment_parallel(self, args): 
-        output_dir, docs, delta, bin, density, class_id, bounds, car_offset = args
+        output_dir, docs, delta, bin, density, class_id, bounds, car_offset, tod_flag = args
         try:
-            graph.plot_density_per_road_segment(output_dir, docs, delta, bin, density, class_id, bounds, car_offset=car_offset)
+            graph.plot_density_per_road_segment(output_dir, docs, delta, bin, density, class_id, bounds, car_offset=car_offset, tod_flag=tod_flag)
             del args
             del density
         except Exception as e:
@@ -781,9 +787,6 @@ class G:
 
             img.save(fp=fp_out, format='GIF', append_images=imgs,
                     save_all=True, duration=60, loop=0)
-
-        
-
         
         
         
@@ -810,7 +813,7 @@ class G:
 
 if __name__ == '__main__':
     #days_of_coverage = ["2023-08-10", "2023-08-11", "2023-08-12", "2023-08-13", "2023-08-14", "2023-08-17", "2023-08-18", "2023-08-20", "2023-08-21", "2023-08-22", "2023-08-23", "2023-08-24", "2023-08-28", "2023-08-29", "2023-08-30", "2023-08-31"]
-    days_of_coverage = ["2023-08-10", "2023-08-11", "2023-08-12"]
+    days_of_coverage = ["2023-08-10", "2023-08-11", "2023-08-12", "2023-08-13", "2023-08-14", "2023-08-17", "2023-08-18", "2023-08-20"]
     graph = G("/share/ju/nexar_data/nexar-scraper","/share/ju/urbanECG/data/geo/nyc.graphml")
     graph.toggle_latex_font()
     for day in days_of_coverage:
@@ -823,7 +826,7 @@ if __name__ == '__main__':
 
     #graph.density_over_datetime_gif(days_of_coverage, (datetime.datetime(2023,8,10,1,0,0), datetime.datetime(2023,8,11,0,0,0)), 2, delta="10min", car_offset=True)    
 
-    graph.density_over_time_of_day_gif(days_of_coverage, (datetime.datetime(2023,8,10,0,0,0), datetime.datetime(2023,8,10,23,59,59)), 2, delta="20min", car_offset=True)
+    graph.density_over_time_of_day_gif(days_of_coverage, (datetime.datetime(2023,8,10,0,0,0), datetime.datetime(2023,8,10,23,59,59)), 2, delta="10min", car_offset=True)
 
    
 
