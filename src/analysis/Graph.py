@@ -1,6 +1,6 @@
 # FARLAB -- UrbanECG Project
 # Dev: Matt Franchi, help from GitHub Copilot 
-# Last Edited: 09/15/2023 
+# Last Edited: 10/02/2023
 
 # This script is used to take the roads of a graph G, and a set of annotated dashcam frames F, and generate commodity densities for each road in G.
 
@@ -787,46 +787,3 @@ class G:
 
             img.save(fp=fp_out, format='GIF', append_images=imgs,
                     save_all=True, duration=60, loop=0)
-        
-        
-        
-
-            
-
-    
-
-                                            
-
-
-
-
-
-
-    
-
-
-            
-
-
-
-
-
-if __name__ == '__main__':
-    #days_of_coverage = ["2023-08-10", "2023-08-11", "2023-08-12", "2023-08-13", "2023-08-14", "2023-08-17", "2023-08-18", "2023-08-20", "2023-08-21", "2023-08-22", "2023-08-23", "2023-08-24", "2023-08-28", "2023-08-29", "2023-08-30", "2023-08-31"]
-    days_of_coverage = ["2023-08-10", "2023-08-11", "2023-08-12", "2023-08-13", "2023-08-14", "2023-08-17", "2023-08-18", "2023-08-20"]
-    graph = G("/share/ju/nexar_data/nexar-scraper","/share/ju/urbanECG/data/geo/nyc.graphml")
-    graph.toggle_latex_font()
-    for day in days_of_coverage:
-        try:
-            graph.init_day_of_coverage(day)
-        except Exception as e:
-            graph.log.error(f"Error in {day}: {e}")
-    #density = graph.density_per_road_segment(days_of_coverage, dtbounds=(datetime.datetime(2023,8,10,12,0,0), datetime.datetime(2023,8,10,14,0,0)))
-    #graph.plot_density_per_road_segment(days_of_coverage, density, 2, car_offset=True)
-
-    #graph.density_over_datetime_gif(days_of_coverage, (datetime.datetime(2023,8,10,1,0,0), datetime.datetime(2023,8,11,0,0,0)), 2, delta="10min", car_offset=True)    
-
-    graph.density_over_time_of_day_gif(days_of_coverage, (datetime.datetime(2023,8,10,0,0,0), datetime.datetime(2023,8,10,23,59,59)), 2, delta="10min", car_offset=True)
-
-   
-
