@@ -49,46 +49,44 @@ else:
     NUM_CORES = int(NUM_CORES)
 
 
-
 class G:
+        """
+    A class representing a graph object.
+
+    Attributes:
+    - DEBUG_MODE (bool): A flag indicating whether debug mode is on or off.
+    - WRITE_MODE (bool): A flag indicating whether write mode is on or off.
+    - log (logging.Logger): A logger object for logging messages.
+    - PROJ_PATH (str): The path to the project directory.
+    - days_of_coverage (list): A list of DayOfCoverage objects representing the days of coverage.
+    - geo (networkx.MultiDiGraph): A MultiDiGraph object representing the graph.
+    - gdf_nodes (geopandas.GeoDataFrame): A GeoDataFrame object representing the nodes of the graph.
+    - gdf_edges (geopandas.GeoDataFrame): A GeoDataFrame object representing the edges of the graph.
+
+    Methods:
+    - toggle_debug(): Toggles the debug mode flag.
+    - toggle_latex_font(): Toggles the LaTeX font flag.
+    - get_frames_worker(folder): Returns a list of all .jpg files in the given folder.
+    - get_md_worker(md_csv): Returns a pandas DataFrame object representing the metadata from the given CSV file.
+    - get_data(day_of_coverage, num_workers): Returns a GeoDataFrame object representing the metadata for the given day of coverage.
+    - load_day_of_coverage(day_of_coverage): Returns a GeoDataFrame object representing the metadata for the given day of coverage.
+    - add_day_of_coverage(day_of_coverage): Adds a DayOfCoverage object representing the given day of coverage to the graph.
+    - get_day_of_coverage(day_of_coverage): Returns a DayOfCoverage object representing the given day of coverage.
+    - nearest_road_worker(subset): Returns a list of the nearest edges for each row in the given subset of metadata.
+    - coverage_to_nearest_road(day_of_coverage): Calculates the nearest road for each frame in the given day of coverage.
+    - add_detections(day_of_coverage): Adds a GeoDataFrame object representing the detections for the given day of coverage to the graph.
+    - plot_edges(): Plots the edges of the graph.
+    - plot_coverage(day_of_coverage): Plots the coverage of the given day of coverage.
+    - plot_detections(day_of_coverage, class_id): Plots the detections of the given class for the given day of coverage.
+    - join_days(DoCs): Concatenates the metadata, nearest edges, and detections of multiple days of coverage into a single DayOfCoverage object.
+    - coco_agg_mappings(operation='mean', data=pd.DataFrame()): Returns a dictionary with class IDs as keys and the specified operation as values.
+    - density_per_road_segment(DoCs, dtbounds=(datetime.datetime(1970,1,1,0,0,0), datetime.datetime(2024,1,1,0,0,0))): Calculates the density of detections per road segment within a given time range.
+    - generate_gif(DoCs): Generates an animated chloropleth GIF using the given DoCs (days of coverage) data.
+    - merge_days(DoCs): Merges the metadata, nearest edges, and detections of multiple days of coverage into a single DayOfCoverage object.
+    - plot_density_per_road_segment(DoCs, dtbounds=(datetime.datetime(1970,1,1,0,0,0), datetime.datetime(2024,1,1,0,0,0))): Plots the density of detections per road segment within a given time range.
     """
-    A class to represent a graph G, and a set of annotated dashcam frames F, and generate commodity densities for each road in G.
-
-    ...
-
-    Attributes
-    ----------
-    PROJ_PATH : str
-        The path to the root of the Nexar dataset.
-    days_of_coverage : list
-        A list of DayOfCoverage objects, each representing a day of coverage from the Nexar dataset.
-    geo : ox.graph
-        The graph of the city, loaded from a graphml file.
-    gdf_nodes : gpd.GeoDataFrame
-        A GeoDataFrame containing the nodes of the graph.
-    gdf_edges : gpd.GeoDataFrame
-        A GeoDataFrame containing the edges of the graph.
     
-    Methods
-    -------
-    get_frames_worker(folder)
-        A worker function for get_data, which loads all frames in a given folder.
-    get_md_worker(md_csv)
-        A worker function for get_data, which loads the metadata for a given folder.
-    get_data(day_of_coverage, num_workers=8)
-        Loads the frames and metadata for a day of coverage from the Nexar dataset.
-    load_day_of_coverage(day_of_coverage)
-        Loads the metadata for a day of coverage from the Nexar dataset.
-    add_day_of_coverage(day_of_coverage)
-        Adds a day of coverage to the graph.
-    get_day_of_coverage(day_of_coverage)
-        Returns the DayOfCoverage object for a given day of coverage.
-    nearest_road_worker(subset)
-        A worker function for coverage_to_nearest_road, which finds the nearest road to each frame in a subset of the metadata.
-    coverage_to_nearest_road(day_of_coverage)
-        Finds the nearest road to each frame in a day of coverage.
     
-    """ 
     def __init__(self, proj_path, graphml_input):
 
         self.DEBUG_MODE = False 
@@ -104,16 +102,24 @@ class G:
         self.log.info("Graph loaded.")
 
     def toggle_debug(self):
+        """
+        Toggles the debug mode flag.
+        """
         self.DEBUG_MODE = not self.DEBUG_MODE
         self.log.info(f"Debug mode set to {self.DEBUG_MODE}.")
 
     def toggle_latex_font(self):
+        """
+        Toggles the LaTeX font flag.
+        """
         plt.rcParams['text.usetex'] = not plt.rcParams['text.usetex']
         self.log.info(f"Latex font set to {plt.rcParams['text.usetex']}.")
 
     
     def get_frames_worker(self, folder):
-
+        """
+        Returns a list of all .jpg files in the given folder.
+        """
         # Check if folder exists
         if not os.path.exists(folder):
             raise ValueError("Folder does not exist.")
@@ -129,21 +135,27 @@ class G:
 
 
     def get_md_worker(self, md_csv):
+        """
+        Returns a pandas DataFrame object representing the metadata from the given CSV file.
+        """
             
-            # If md_csv is None, return 0
-            if md_csv is None:
-                return 0
-    
-            # Check if md_csv exists
-            if not os.path.exists(md_csv):
-                self.log.warning(f"Metadata CSV: {md_csv} does not exist.")
-    
-            # Read CSV
-            df = pd.read_csv(md_csv, engine='pyarrow')
-    
-            return df
+        # If md_csv is None, return 0
+        if md_csv is None:
+            return 0
+
+        # Check if md_csv exists
+        if not os.path.exists(md_csv):
+            self.log.warning(f"Metadata CSV: {md_csv} does not exist.")
+
+        # Read CSV
+        df = pd.read_csv(md_csv, engine='pyarrow')
+
+        return df
 
     def get_data(self, day_of_coverage, num_workers=24):
+        """
+        Returns a GeoDataFrame object representing the metadata for the given day of coverage.
+        """
 
         # Check if md file has already been written to output 
         if os.path.exists(f"../../output/df/{day_of_coverage}/md.csv"):
@@ -217,21 +229,27 @@ class G:
         return md
         
 
-
-
-
     def load_day_of_coverage(self, day_of_coverage):
+        """
+        Returns a GeoDataFrame object representing the metadata for the given day of coverage.
+        """
         return self.get_data(day_of_coverage)
 
         
 
     def add_day_of_coverage(self, day_of_coverage): 
+        """
+        Adds a DayOfCoverage object representing the given day of coverage to the graph.
+        """
         DoC = DayOfCoverage(day_of_coverage)
         DoC.frames_data = self.get_data(day_of_coverage)
         self.days_of_coverage.append(DoC)
         self.log.info(f"Added day of coverage {day_of_coverage} to graph, with {len(DoC.frames_data.index)} rows.")
 
     def get_day_of_coverage(self, day_of_coverage):
+        """
+        Returns a DayOfCoverage object representing the given day of coverage.
+        """
         for DoC in self.days_of_coverage:
             if DoC.date == day_of_coverage:
                 return DoC
@@ -241,15 +259,18 @@ class G:
 
     
     def nearest_road_worker(self, subset): 
+        """
+        Returns a list of the nearest edges for each row in the given subset of metadata.
+        """
         # Get nearest edge for each row in md 
         nearest_edges = ox.distance.nearest_edges(self.geo, subset.geometry.x, subset.geometry.y, return_dist=True)
 
         return nearest_edges
 
     def coverage_to_nearest_road(self, day_of_coverage): 
-
-        
-
+        """
+        Calculates the nearest road for each frame in the given day of coverage.
+        """
         # Check if day of coverage is in graph
         DoC = self.get_day_of_coverage(day_of_coverage)
 
@@ -293,6 +314,9 @@ class G:
         return 0
     
     def add_detections(self, day_of_coverage):
+        """
+        Adds a GeoDataFrame object representing the detections for the given day of coverage to the graph.
+        """
         detections = pd.read_csv(f"../../output/df/{day_of_coverage}/detections.csv", engine='pyarrow')
         DoC = self.get_day_of_coverage(day_of_coverage)
         DoC.detections = detections
@@ -302,6 +326,9 @@ class G:
     
 
     def plot_edges(self): 
+        """
+        Plots the edges of the graph.
+        """
         _, ax = plt.subplots(figsize=(20,20))
         self.gdf_edges.plot(ax=ax, color='black', linewidth=0.5)
         rID = uuid.uuid4().hex[:8]
@@ -309,6 +336,9 @@ class G:
         plt.close()
     
     def plot_coverage(self, day_of_coverage):
+        """
+        Plots the coverage of the given day of coverage.
+        """
         DoC = self.get_day_of_coverage(day_of_coverage)
         _, ax = plt.subplots(figsize=(30,30))
 
@@ -337,6 +367,10 @@ class G:
         plt.close()
     
     def plot_detections(self, day_of_coverage, class_id):
+        """
+        Plots the detections of the given class for the given day of coverage.
+        """
+        
         DoC = self.get_day_of_coverage(day_of_coverage)
         _, ax = plt.subplots(figsize=(30,30), frameon=True)
 
@@ -362,20 +396,50 @@ class G:
         plt.savefig(f"../../output/plots/{day_of_coverage}/{class_id}_density_{rID}.png", bbox_inches='tight', pad_inches=0)
         plt.close()
 
+
     def init_day_of_coverage(self, doc):
+        """
+        Initializes the day of coverage by adding it to the graph, finding the nearest road, and adding detections.
+
+        Args:
+            doc: The day of coverage document to initialize.
+
+        Returns:
+            None
+        """
         self.add_day_of_coverage(doc)
         self.coverage_to_nearest_road(doc)
         self.add_detections(doc)
 
         self.log.info(f"Added {doc} to graph.")
-    
+
     def generate_gif(self, DoCs): 
+        """
+        Generates an animated chloropleth GIF using the given DoCs (days of coverage) data.
+        
+        Args:
+        - self: the Graph object
+        - DoCs: the days of coverage data
+        
+        Returns:
+        - None
+        """
         gif = am.AnimatedChloropleth(self, DoCs)
         gif.set_roads(self.geo)
         gif.generate_frames("captured_at", "2", "10min", "bin", car_offset=True)
         gif.generate_gif()
 
     def join_days(self, DoCs): 
+        """
+        Concatenates the metadata, nearest edges, and detections of multiple days of coverage into a single DayOfCoverage object.
+
+        Args:
+            DoCs (list): A list of DayOfCoverage objects to be concatenated.
+
+        Returns:
+            DayOfCoverage: A new DayOfCoverage object with the concatenated metadata, nearest edges, and detections.
+        """
+
         # Check if all days are in graph
         for doc in DoCs:
             if self.get_day_of_coverage(doc) == 4:
@@ -412,14 +476,35 @@ class G:
 
 
     def coco_agg_mappings(self, operation='mean', data = pd.DataFrame()):
-        agg_dict = {}
-        for class_id in cm.coco_classes.keys():
-            if str(class_id) in data.detections.columns.astype(str):
-                agg_dict[str(class_id)] = operation
-        return agg_dict
+            """
+            Returns a dictionary with class IDs as keys and the specified operation as values.
+            
+            Parameters:
+            operation (str): The operation to perform on the data. Default is 'mean'.
+            data (pd.DataFrame): The data to perform the operation on. Default is an empty DataFrame.
+            
+            Returns:
+            dict: A dictionary with class IDs as keys and the specified operation as values.
+            """
+            agg_dict = {}
+            for class_id in cm.coco_classes.keys():
+                if str(class_id) in data.detections.columns.astype(str):
+                    agg_dict[str(class_id)] = operation
+            return agg_dict
 
 
     def density_per_road_segment(self, DoCs, dtbounds=(datetime.datetime(1970,1,1,0,0,0), datetime.datetime(2024,1,1,0,0,0))): 
+        """
+        Calculates the density of detections per road segment within a given time range.
+
+        Args:
+        - DoCs: A list of DayOfCounts objects.
+        - dtbounds: A tuple of two datetime objects representing the start and end of the time range. Default is from 1970 to 2024.
+
+        Returns:
+        - A pandas DataFrame containing the density of detections per road segment.
+        """
+
         # Make sure dtbounds are localized in EST 
         dtbounds = (dtbounds[0].astimezone(tz=pytz.timezone('America/New_York')), dtbounds[1].astimezone(tz=pytz.timezone('America/New_York')))
         data = self.join_days(DoCs)
@@ -434,7 +519,7 @@ class G:
         detections.set_index(detections.iloc[:,0], inplace=True)
         detections.fillna(0, inplace=True)
 
-       
+        
 
         density = md.merge(detections, left_on='frame_id', right_index=True)
         density = density.merge(data.nearest_edges, left_on='frame_id', right_on='frame_id')
@@ -452,10 +537,22 @@ class G:
         del detections
         del md 
 
-        return density 
+        return density
+
 
     def data2density(self, data, class_id, dtbounds, car_offset=False):
+        """
+        Computes the density of a given class of objects in a set of frames.
 
+        Args:
+            data (Data): the data object containing the frames and detections.
+            class_id (int): the ID of the class to compute the density for.
+            dtbounds (tuple): a tuple containing the start and end timestamps of the frames to consider.
+            car_offset (bool, optional): whether to add 1 to the number of detections for the given class. Defaults to False.
+
+        Returns:
+            pandas.DataFrame: a DataFrame containing the density of the given class of objects in each edge of the road network.
+        """
 
         if car_offset:
             data.detections[str(class_id)] = data.detections[str(class_id)] + 1
@@ -485,10 +582,38 @@ class G:
 
         return density
         
-
-
-
+        
     def plot_density_per_road_segment(self, output_dir, DoCs, delta, bin, density, class_id, ax_bounds=(0,100), binned=True, car_offset=False, tod_flag=False): 
+        """
+        Plots the density of a given class of objects per road segment, using a choropleth map.
+
+        Parameters:
+        -----------
+        output_dir : str
+            The directory where the plot will be saved.
+        DoCs : list of str
+            The dates of the data to be plotted.
+        delta : int
+            The time interval in minutes between each data point.
+        bin : datetime.datetime
+            The time of the data point to be plotted.
+        density : pandas.DataFrame
+            A DataFrame containing the density of objects per road segment.
+        class_id : int
+            The ID of the class of objects to be plotted.
+        ax_bounds : tuple of float, optional
+            The minimum and maximum values for the colorbar.
+        binned : bool, optional
+            Whether to plot the data using bins or not.
+        car_offset : bool, optional
+            Whether to offset the data to account for car speed.
+        tod_flag : bool, optional
+            Whether to plot the data as a function of time of day.
+
+        Returns:
+        --------
+        None
+        """
 
         density = self.gdf_edges.merge(density, on=['u', 'v'], how='left')
         density = density.to_crs("EPSG:2263")
@@ -543,14 +668,32 @@ class G:
         plt.close()
 
     
-    def compute_density_range(self, docs, class_id, dtbounds, delta, car_offset=False, time_of_day_merge=False):
+        
+    def compute_density_range(self, DoCs, class_id, dtbounds, delta, car_offset=False, time_of_day_merge=False):
+        """
+        Computes the minimum and maximum density of a given class of objects in a set of days of coverage, within a given time range.
+
+        Args:
+            DoCs (list): A list of documents containing object detections.
+            class_id (int): The ID of the class of objects to compute density for.
+            dtbounds (tuple): A tuple of two datetime objects representing the start and end of the time range to consider.
+            delta (str): A string representing the time interval to group detections by (e.g. '5min', '1H', etc.).
+            car_offset (bool, optional): Whether to apply a car offset to the detections. Defaults to False.
+            time_of_day_merge (bool, optional): Whether to merge detections from different days based on their time of day. Defaults to False.
+
+        Returns:
+            list: A list containing the minimum and maximum density of the given class of objects within the specified time range.
+
+        Raises:
+            ValueError: If the minimum density computed is less than 0.
+        """
 
         if time_of_day_merge:
             dtbounds = (dtbounds[0].replace(year=1970, month=1, day=1), dtbounds[1].replace(year=1970, month=1, day=1))
             
-            data = self.merge_days(docs)
+            data = self.merge_days(DoCs)
         else:
-            data = self.join_days(docs)
+            data = self.join_days(DoCs)
 
         dtbounds = (dtbounds[0].astimezone(tz=pytz.timezone('America/New_York')), dtbounds[1].astimezone(tz=pytz.timezone('America/New_York')))
 
@@ -598,6 +741,15 @@ class G:
 
         
     def colorbar_norm_cmap(self, bounds):
+        """
+        Create a custom, continuous legend with a color map and normalized bins.
+
+        Args:
+            bounds (list): A list of bin boundaries.
+
+        Returns:
+            tuple: A tuple containing the normalized bins and the custom color map.
+        """
         
         # create custom, continuous legend 
         # create a color map
@@ -611,24 +763,26 @@ class G:
         bounds
         norm = plt.Normalize(bounds[0], bounds[-1])
 
-       
-        
         return norm, cmap
 
 
-        
-        
+    def density_over_datetime_gif(self, DoCs, dtbounds, class_id, delta="60min", car_offset=False):
+        """
+        Generates a density-over-datetime GIF animation for a given object class. 
 
+        Args:
+            DoCs (list): A list of documents containing the data to be plotted.
+            dtbounds (tuple): A tuple with two elements representing the datetime bounds of the plot.
+            class_id (int or str): The ID of the class of road segments to be plotted.
+            delta (str, optional): The time interval between each frame of the animation. Defaults to "60min".
+            car_offset (bool, optional): Whether to apply a car offset to the data. Defaults to False.
 
+        Returns:
+            None
+        """
 
-        
-
-
-
-
-    def density_over_datetime_gif(self, docs, dtbounds, class_id, delta="60min", car_offset=False):
         class_id = str(class_id)
-        data = self.join_days(docs)
+        data = self.join_days(DoCs)
 
         # generate time bins 
         bins = pd.date_range(dtbounds[0], dtbounds[1], freq=delta)
@@ -637,7 +791,7 @@ class G:
         output_dir = uuid.uuid4().hex[:8]
 
         # generate cb norm and cmap 
-        bounds = self.compute_density_range(docs, class_id, dtbounds, delta, car_offset=car_offset)
+        bounds = self.compute_density_range(DoCs, class_id, dtbounds, delta, car_offset=car_offset)
 
         args = [] 
         for idx, bin in enumerate(bins): 
@@ -651,26 +805,36 @@ class G:
             density = self.data2density(data, class_id, dtbounds, car_offset=car_offset)
             del plot_data 
             tod_flag = False
-            args.append((output_dir, docs, delta, bin, density, class_id, bounds, car_offset, tod_flag))
+            args.append((output_dir, DoCs, delta, bin, density, class_id, bounds, car_offset, tod_flag))
         
 
 
         Parallel(n_jobs=NUM_CORES)(delayed(self.plot_density_per_road_segment_parallel)(arg) for arg in tqdm(args))
 
         # generate gif
-        self.generate_gif(output_dir, class_id, docs, delta)
+        self.generate_gif(output_dir, class_id, DoCs, delta)
 
 
-    def merge_days(self, docs):
+    def merge_days(self, DoCs):
+        """
+        Merges the data from multiple days of coverage into a single DayOfCoverage object.
+
+        Args:
+            DoCs (list): A list of DayOfCoverage objects to merge.
+
+        Returns:
+            DayOfCoverage: A new DayOfCoverage object containing the merged data.
+        """
+
         # Check if all days are in graph
-        for doc in docs:
+        for doc in DoCs:
             if self.get_day_of_coverage(doc) == 4:
                 self.log.error(f"Day of coverage {doc} not in graph.")
                 return 4
         
         # Get nearest edges for each day of coverage
         nearest_edges = []
-        for doc in docs:
+        for doc in DoCs:
             nearest_edges.append(self.get_day_of_coverage(doc).nearest_edges)
         
         # Concatenate nearest edges 
@@ -678,7 +842,7 @@ class G:
 
         # Get detections for each day of coverage
         detections = []
-        for doc in docs:
+        for doc in DoCs:
             detections.append(self.get_day_of_coverage(doc).detections)
         
         # Concatenate detections
@@ -686,7 +850,7 @@ class G:
 
         # Get metadata for each day of coveragex
         md = []
-        for doc in docs:
+        for doc in DoCs:
             md.append(self.get_day_of_coverage(doc).frames_data)
         
         # Concatenate metadata
@@ -707,10 +871,23 @@ class G:
         return DayOfCoverage("merged", md, nearest_edges, detections)
 
     
-    def density_over_time_of_day_gif(self, docs, tbounds, class_id, delta="60min", car_offset=False):
+    def density_over_time_of_day_gif(self, DoCs, tbounds, class_id, delta="60min", car_offset=False):
+        """
+        Generates a GIF animation showing the density of a given class of objects over time of day, for a given time range.
+
+        Args:
+            DoCs (list): A list of document IDs to consider.
+            tbounds (tuple): A tuple of two datetime objects representing the start and end times of the time range to consider.
+            class_id (int or str): The ID of the class of objects to consider.
+            delta (str, optional): The time interval to use for the density computation. Defaults to "60min".
+            car_offset (bool, optional): Whether to apply a car offset to the density computation. Defaults to False.
+
+        Returns:
+            None
+        """
         class_id = str(class_id)
-        data = self.merge_days(docs)
-        self.log.info(f"Merged days of coverage {docs} into one hypothetical of coverage.")
+        data = self.merge_days(DoCs)
+        self.log.info(f"Merged days of coverage {DoCs} into one hypothetical of coverage.")
 
         # add jan 1 1970 to tbounds
         tbounds = (tbounds[0].replace(year=1970, month=1, day=1), tbounds[1].replace(year=1970, month=1, day=1))
@@ -726,8 +903,8 @@ class G:
         output_dir = uuid.uuid4().hex[:8]
 
         # generate cb norm and cmap 
-        bounds = self.compute_density_range(docs, class_id, tbounds, delta, car_offset=car_offset, time_of_day_merge=True)
-        self.log.info(f"Computed density range for {docs}, lower bound: {bounds[0]}, upper bound: {bounds[1]}")
+        bounds = self.compute_density_range(DoCs, class_id, tbounds, delta, car_offset=car_offset, time_of_day_merge=True)
+        self.log.info(f"Computed density range for {DoCs}, lower bound: {bounds[0]}, upper bound: {bounds[1]}")
 
         args = [] 
         for idx, bin in tqdm(enumerate(bins), total=len(bins)): 
@@ -741,30 +918,61 @@ class G:
             density = self.data2density(data, class_id, tbounds, car_offset=car_offset)
             del plot_data 
             tod_flag = True 
-            args.append((output_dir, docs, delta, bin, density, class_id, bounds, car_offset, tod_flag))
+            args.append((output_dir, DoCs, delta, bin, density, class_id, bounds, car_offset, tod_flag))
         
         self.log.info(f"Generated {len(args)} arguments for plotting density per road segment.")
         
 
-        self.log.info(f"Plotting density per road segment for {docs}.")
+        self.log.info(f"Plotting density per road segment for {DoCs}.")
         Parallel(n_jobs=NUM_CORES)(delayed(self.plot_density_per_road_segment_parallel)(arg) for arg in tqdm(args, desc="Plotting density per road segment."))
 
         # generate gif
-        self.generate_gif(output_dir, class_id, docs, delta)
+        self.generate_gif(output_dir, class_id, DoCs, delta)
 
 
         
     def plot_density_per_road_segment_parallel(self, args): 
-        output_dir, docs, delta, bin, density, class_id, bounds, car_offset, tod_flag = args
+        """
+        Plots the density per road segment in parallel.
+
+        Args:
+            args (tuple): A tuple containing the following arguments:
+                output_dir (str): The output directory for the plot.
+                DoCs (list): A list of days of coverage to plot.
+                delta (float): The delta value for the plot.
+                bin (str): The bin for the plot.
+                density (str): The density for the plot.
+                class_id (str): The class ID for the plot.
+                bounds (list): A list of bounds for the plot.
+                car_offset (bool): Flag to offset car counts by 1. (Default: False)
+                tod_flag (bool): Flag to merge on time of day.
+
+        Returns:
+            int: Returns 4 if there is an error, otherwise returns None.
+        """
+        output_dir, DoCs, delta, bin, density, class_id, bounds, car_offset, tod_flag = args
         try:
-            graph.plot_density_per_road_segment(output_dir, docs, delta, bin, density, class_id, bounds, car_offset=car_offset, tod_flag=tod_flag)
+            graph.plot_density_per_road_segment(output_dir, DoCs, delta, bin, density, class_id, bounds, car_offset=car_offset, tod_flag=tod_flag)
             del args
             del density
         except Exception as e:
             graph.log.error(f"Error in {bin}: {e}")
             return 4
 
+
     def generate_gif(self, frames_dir, class_id, days_of_coverage, delta, fps=24, duration=42, loop=0):
+        """
+        Generate a GIF from a directory of frames.
+
+        Args:
+            frames_dir (str): The directory containing the frames to be used in the GIF.
+            class_id (str): The ID of the class being analyzed.
+            days_of_coverage (int): The number of days of data being analyzed.
+            delta (int): The time delta between each frame.
+            fps (int, optional): The frames per second of the GIF. Defaults to 24.
+            duration (int, optional): The duration of the GIF in seconds. Defaults to 42.
+            loop (int, optional): The number of times the GIF should loop. Defaults to 0.
+        """
         
         os.makedirs(f"../../output/gifs", exist_ok=True)
 
@@ -785,5 +993,5 @@ class G:
             # extract  first image from iterator
             img = next(imgs)
 
-            img.save(fp=fp_out, format='GIF', append_images=imgs,
-                    save_all=True, duration=60, loop=0)
+            img.save(fp=fp_out, format='GIF', append_images=imgs, save_all=True, duration=60, loop=0)
+
