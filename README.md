@@ -5,7 +5,7 @@ This work is supported by Nexar Inc., who provides the anonymized dashboard came
 
 
 ## Scaffolding Distribution 
-[Link to download model weights]()
+[Link to download model weights](https://cornell.box.com/s/xa8ebepv8d6875q0ey46fz2kyxc51xb5)
 
 
 ## Policing Deployments 
