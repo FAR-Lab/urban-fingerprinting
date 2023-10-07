@@ -5,11 +5,11 @@
 #SBATCH --mail-type=ALL 
 #SBATCH --mail-user=mwf62@cornell.edu 
 #SBATCH -N 1
-#SBATCH -n 8
+#SBATCH -n 16
 #SBATCH --get-user-env 
-#SBATCH --mem=64gb
+#SBATCH --mem=192gb
 #SBATCH -t 400:00:00 
-#SBATCH --partition=ju
+#SBATCH --partition=pierson
 
 pwd
 source /home/mwf62/.bashrc
@@ -18,4 +18,4 @@ source activate /share/ju/conda_virtualenvs/urbanekg
 
 cd /share/ju/urbanECG/src/analysis
 
-python Graph.py
+python graph-test.py
