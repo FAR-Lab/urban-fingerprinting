@@ -1,5 +1,5 @@
 #!/bin/bash 
-#SBATCH -J dw1
+#SBATCH -J dw
 #SBATCH -o /share/ju/urbanECG/log/detector/%j.out 
 #SBATCH -e /share/ju/urbanECG/log/detector/%j.err
 #SBATCH --mail-type=ALL 
@@ -14,9 +14,9 @@
 
 pwd
 source /home/mwf62/.bashrc
- 
+
 conda info --envs
-source activate /share/ju/conda_virtualenvs/yolo-inference-urbanekg
+source /share/apps/anaconda3/2022.10/bin/activate /share/ju/conda_virtualenvs/yolo-inference-urbanekg
 
 pip list
 
@@ -31,7 +31,7 @@ DoC=$1
 for i in {0..15}
 do
     WORKER_ID=$((($GPU_ID*$NUM_TASKS_PER_GPU)+$i))
-    python detect.py --weights ../yolov7_weights/yolov7-e6e.pt --source ../../../output/yolo/$DoC/frames_lists/chunk_$WORKER_ID --save-txt --save-conf --project ../../../output/yolo/$DoC/$WORKER_ID  --device 0 --img-size 1280 --nosave --conf-thres 0.5 --augment &
+    conda run --prefix /share/ju/conda_virtualenvs/yolo-inference-urbanekg python detect.py --weights ../yolov7_weights/yolov7-e6e.pt --source ../../../output/yolo/$DoC/frames_lists/chunk_$WORKER_ID --save-txt --save-conf --project ../../../output/yolo/$DoC/$WORKER_ID  --device 0 --img-size 1280 --nosave --conf-thres 0.5 --augment &
 done
 
 wait
