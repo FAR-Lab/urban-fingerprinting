@@ -14,11 +14,15 @@
 pwd
 source /home/mwf62/.bashrc
  
-source activate /share/ju/conda_virtualenvs/yolo-inference-urbanekg
+source activate /share/ju/conda_virtualenvs/urbanekg
 
 cd /share/ju/urbanECG/src/cv
 
 python detector.py $1 $2
+
+cd /share/ju/urbanECG/jobs
+echo "Cd'd to $(pwd)"
+
 sbatch detect_worker.sub $2 0
 sbatch detect_worker.sub $2 1
 sbatch detect_worker.sub $2 2
