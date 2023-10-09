@@ -8,6 +8,12 @@ from termcolor import colored
 from glob import glob 
 from concurrent.futures import ProcessPoolExecutor
 import os 
+import sys 
+
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../..')))
+
+from user.params.data import IMG_ID
 
 from tqdm import tqdm
 
