@@ -12,6 +12,10 @@ import geoplot.crs as gcrs
 from joblib import Parallel, delayed
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../..")))
+
+from user.params.data import LONGITUDE_COL, LATITUDE_COL, TIME_COL, COORD_CRS, PROJ_CRS, TZ, IMG_ID
+
 from utils.logger import setup_logger 
 
 import glob
