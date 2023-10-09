@@ -33,11 +33,13 @@ logging.basicConfig(level=logging.INFO)
 from shapely import wkt
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../..")))
 
 from utils import coco_mappings as cm
 from visualization import AnimatedMap as am
 from DayOfCoverage import DayOfCoverage
 
+from users.params.data import LONGITUDE_COL, LATITUDE_COL, TIME_COL, COORD_CRS, PROJ_CRS, IMG_ID, TZ
 
 # Constant for number of workers to use in parallel, should be equal to number of cores on machine
 NUM_CORES = os.getenv("SLURM_CPUS_ON_NODE")
@@ -50,7 +52,7 @@ else:
 
 
 class G:
-        """
+    """
     A class representing a graph object.
 
     Attributes:
@@ -85,7 +87,6 @@ class G:
     - merge_days(DoCs): Merges the metadata, nearest edges, and detections of multiple days of coverage into a single DayOfCoverage object.
     - plot_density_per_road_segment(DoCs, dtbounds=(datetime.datetime(1970,1,1,0,0,0), datetime.datetime(2024,1,1,0,0,0))): Plots the density of detections per road segment within a given time range.
     """
-    
     
     def __init__(self, proj_path, graphml_input):
 
@@ -161,7 +162,7 @@ class G:
         if os.path.exists(f"../../output/df/{day_of_coverage}/md.csv"):
             # read md file from output 
             md = pd.read_csv(f"../../output/df/{day_of_coverage}/md.csv", engine='pyarrow')
-            md = gpd.GeoDataFrame(md, geometry=wkt.loads(md['geometry']), crs="EPSG:4326")
+            md = gpd.GeoDataFrame(md, geometry=wkt.loads(md['geometry']), crs=COORD_CRS)
             # return md
             self.log.info(f"Loading metadata from output for day of coverage {day_of_coverage}.")
             return md
@@ -213,11 +214,11 @@ class G:
         # get frame ids from frames list 
         frame_ids = [x.split("/")[-1].split(".")[0] for x in frames]
         # filter md list to only include rows in frame_ids 
-        md = md[md["frame_id"].isin(frame_ids)]
+        md = md[md[IMG_ID].isin(frame_ids)]
 
         # turn md into GeoDataFrame
-        md = gpd.GeoDataFrame(md, geometry=gpd.points_from_xy(md["gps_info.longitude"], md["gps_info.latitude"], crs="EPSG:4326"))
-        md = md.to_crs("EPSG:2263")
+        md = gpd.GeoDataFrame(md, geometry=gpd.points_from_xy(md[LONGITUDE_COL], md[LATITUDE_COL], crs=COORD_CRS))
+        md = md.to_crs(PROJ_CRS)
        
         if self.WRITE_MODE:
             os.makedirs(f"../../output/df/{day_of_coverage}", exist_ok=True)
@@ -276,7 +277,7 @@ class G:
 
         # Get day of coverage data
         md = self.get_day_of_coverage(day_of_coverage).frames_data
-        md = md.to_crs("EPSG:2263")
+        md = md.to_crs(PROJ_CRS)
 
         # Check if nearest edges have already been written to output
         if os.path.exists(f"../../output/df/{day_of_coverage}/nearest_edges.csv"):
@@ -299,8 +300,8 @@ class G:
 
         nearest_edges = pd.DataFrame(nearest_edges, columns=['u', 'v', 'key'])
         nearest_edges['dist'] = nearest_edges_dist
-        nearest_edges['frame_id'] = md['frame_id'].tolist()
-        nearest_edges = nearest_edges.set_index('frame_id')
+        nearest_edges[IMG_ID] = md[IMG_ID].tolist()
+        nearest_edges = nearest_edges.set_index(IMG_ID)
 
         DoC.nearest_edges = nearest_edges
 
@@ -370,7 +371,7 @@ class G:
         """
         Plots the detections of the given class for the given day of coverage.
         """
-        
+
         DoC = self.get_day_of_coverage(day_of_coverage)
         _, ax = plt.subplots(figsize=(30,30), frameon=True)
 
@@ -426,7 +427,7 @@ class G:
         """
         gif = am.AnimatedChloropleth(self, DoCs)
         gif.set_roads(self.geo)
-        gif.generate_frames("captured_at", "2", "10min", "bin", car_offset=True)
+        gif.generate_frames(TIME_COL, "2", "10min", "bin", car_offset=True)
         gif.generate_gif()
 
     def join_days(self, DoCs): 
@@ -469,8 +470,8 @@ class G:
         
         # Concatenate metadata
         md = pd.concat(md)
-        md['captured_at'] = pd.to_datetime(md['captured_at'], unit='ms')
-        md['captured_at'] = md['captured_at'].dt.tz_localize('UTC').dt.tz_convert('America/New_York')
+        md[TIME_COL] = pd.to_datetime(md[TIME_COL], unit='ms')
+        md[TIME_COL] = md[TIME_COL].dt.tz_localize('UTC').dt.tz_convert(TZ)
 
         return DayOfCoverage("joined", md, nearest_edges, detections)
 
@@ -506,13 +507,13 @@ class G:
         """
 
         # Make sure dtbounds are localized in EST 
-        dtbounds = (dtbounds[0].astimezone(tz=pytz.timezone('America/New_York')), dtbounds[1].astimezone(tz=pytz.timezone('America/New_York')))
+        dtbounds = (dtbounds[0].astimezone(tz=pytz.timezone(TZ)), dtbounds[1].astimezone(tz=pytz.timezone(TZ)))
         data = self.join_days(DoCs)
 
         md = data.frames_data
         
 
-        md = md[(md['captured_at'] >= dtbounds[0]) & (md['captured_at'] <= dtbounds[1])]
+        md = md[(md[TIME_COL] >= dtbounds[0]) & (md[TIME_COL] <= dtbounds[1])]
 
         
         detections = data.detections 
@@ -521,8 +522,8 @@ class G:
 
         
 
-        density = md.merge(detections, left_on='frame_id', right_index=True)
-        density = density.merge(data.nearest_edges, left_on='frame_id', right_on='frame_id')
+        density = md.merge(detections, left_on=IMG_ID, right_index=True)
+        density = density.merge(data.nearest_edges, left_on=IMG_ID, right_on=IMG_ID)
         
 
 
@@ -560,7 +561,7 @@ class G:
         md = data.frames_data
         
 
-        md = md[(md['captured_at'] >= dtbounds[0]) & (md['captured_at'] <= dtbounds[1])]
+        md = md[(md[TIME_COL] >= dtbounds[0]) & (md[TIME_COL] <= dtbounds[1])]
 
         
         detections = data.detections 
@@ -568,8 +569,8 @@ class G:
         detections.fillna(0, inplace=True)
 
 
-        density = md.merge(detections, left_on='frame_id', right_index=True)
-        density = density.merge(data.nearest_edges, left_on='frame_id', right_on='frame_id')
+        density = md.merge(detections, left_on=IMG_ID, right_index=True)
+        density = density.merge(data.nearest_edges, left_on=IMG_ID, right_on=IMG_ID)
         
 
 
@@ -616,11 +617,11 @@ class G:
         """
 
         density = self.gdf_edges.merge(density, on=['u', 'v'], how='left')
-        density = density.to_crs("EPSG:2263")
+        density = density.to_crs(PROJ_CRS)
 
 
 
-        _, ax = plt.subplots(figsize=(40,40), frameon=True)
+        fig, ax = plt.subplots(figsize=(40,40), frameon=True)
 
         self.gdf_edges.plot(ax=ax, color='lightcoral', linewidth=0.5, alpha=0.2)
 
@@ -667,6 +668,9 @@ class G:
         plt.clf()
         plt.close()
 
+        del density 
+
+
     
         
     def compute_density_range(self, DoCs, class_id, dtbounds, delta, car_offset=False, time_of_day_merge=False):
@@ -695,21 +699,21 @@ class G:
         else:
             data = self.join_days(DoCs)
 
-        dtbounds = (dtbounds[0].astimezone(tz=pytz.timezone('America/New_York')), dtbounds[1].astimezone(tz=pytz.timezone('America/New_York')))
+        dtbounds = (dtbounds[0].astimezone(tz=pytz.timezone(TZ)), dtbounds[1].astimezone(tz=pytz.timezone(TZ)))
 
-        md = data.frames_data[['captured_at', 'frame_id']]
-        md = md[(md['captured_at'] >= dtbounds[0]) & (md['captured_at'] <= dtbounds[1])]
+        md = data.frames_data[[TIME_COL, IMG_ID]]
+        md = md[(md[TIME_COL] >= dtbounds[0]) & (md[TIME_COL] <= dtbounds[1])]
 
         detections = data.detections
         detections.set_index(detections.iloc[:,0], inplace=True)
         detections.fillna(0, inplace=True)
 
-        md = md.merge(data.detections, left_on='frame_id', right_index=True)
+        md = md.merge(data.detections, left_on=IMG_ID, right_index=True)
 
-        md = md.merge(data.nearest_edges, left_on='frame_id', right_on='frame_id')
+        md = md.merge(data.nearest_edges, left_on=IMG_ID, right_on=IMG_ID)
 
-        md['captured_at'] = md['captured_at'].dt.floor(delta)
-        subsets = md.groupby(['captured_at'])
+        md[TIME_COL] = md[TIME_COL].dt.floor(delta)
+        subsets = md.groupby([TIME_COL])
 
         bounds = [0,0]
         # iterate through each subset
@@ -731,7 +735,7 @@ class G:
         
 
         del md 
-        del detections 
+        del detections
         del subsets 
 
         return bounds
@@ -753,7 +757,7 @@ class G:
         
         # create custom, continuous legend 
         # create a color map
-        cmap = plt.cm.BuPu
+        cmap = plt.cm.RdPu
         # extract all colors from the .jet map
         cmaplist = [cmap(i) for i in range(cmap.N)]
         # create the new map
@@ -786,7 +790,7 @@ class G:
 
         # generate time bins 
         bins = pd.date_range(dtbounds[0], dtbounds[1], freq=delta)
-        bins = bins.tz_localize('America/New_York')
+        bins = bins.tz_localize(TZ)
 
         output_dir = uuid.uuid4().hex[:8]
 
@@ -801,7 +805,7 @@ class G:
             else:
                 dtbounds = (bins[idx-6], bins[idx])
             #dtbounds = (bin, bin + pd.Timedelta(delta))
-            plot_data = data.frames_data[(data.frames_data['captured_at'] >= dtbounds[0]) & (data.frames_data['captured_at'] <= dtbounds[1])]
+            plot_data = data.frames_data[(data.frames_data[TIME_COL] >= dtbounds[0]) & (data.frames_data[TIME_COL] <= dtbounds[1])]
             density = self.data2density(data, class_id, dtbounds, car_offset=car_offset)
             del plot_data 
             tod_flag = False
@@ -846,6 +850,7 @@ class G:
             detections.append(self.get_day_of_coverage(doc).detections)
         
         # Concatenate detections
+        
         detections = pd.concat(detections)
 
         # Get metadata for each day of coveragex
@@ -858,15 +863,15 @@ class G:
 
         
 
-        md['captured_at'] = pd.to_datetime(md['captured_at'], unit='ms')
-        md['captured_at'] = md['captured_at'].dt.tz_localize('UTC').dt.tz_convert('America/New_York')
+        md[TIME_COL] = pd.to_datetime(md[TIME_COL], unit='ms')
+        md[TIME_COL] = md[TIME_COL].dt.tz_localize('UTC').dt.tz_convert(TZ)
 
-        # Strip date from captured_at, only leave time of day 
-        # Add jan 1 1970 to captured_at
-        md['captured_at'] = md['captured_at'].apply(lambda dt: dt.replace(year=1970, month=1, day=1))
+        # Strip date from TIME_COL, only leave time of day 
+        # Add jan 1 1970 to TIME_COL
+        md[TIME_COL] = md[TIME_COL].apply(lambda dt: dt.replace(year=1970, month=1, day=1))
     
-        # Sort by captured_at
-        md = md.sort_values(by=['captured_at'])
+        # Sort by TIME_COL
+        md = md.sort_values(by=[TIME_COL])
 
         return DayOfCoverage("merged", md, nearest_edges, detections)
 
@@ -893,11 +898,11 @@ class G:
         tbounds = (tbounds[0].replace(year=1970, month=1, day=1), tbounds[1].replace(year=1970, month=1, day=1))
         
         # localize tbounds in est 
-        tbounds = (tbounds[0].astimezone(tz=pytz.timezone('America/New_York')), tbounds[1].astimezone(tz=pytz.timezone('America/New_York')))
+        tbounds = (tbounds[0].astimezone(tz=pytz.timezone(TZ)), tbounds[1].astimezone(tz=pytz.timezone(TZ)))
 
         # generate time bins 
         bins = pd.date_range(tbounds[0], tbounds[1], freq=delta)
-        #bins = bins.tz_localize('America/New_York')
+        #bins = bins.tz_localize(TZ)
         self.log.info(f"Generated {len(bins)} bins.")
 
         output_dir = uuid.uuid4().hex[:8]
@@ -914,7 +919,7 @@ class G:
             else:
                 tbounds = (bins[idx-6], bins[idx])
             #dtbounds = (bin, bin + pd.Timedelta(delta))
-            plot_data = data.frames_data[(data.frames_data['captured_at'] >= tbounds[0]) & (data.frames_data['captured_at'] <= tbounds[1])]
+            plot_data = data.frames_data[(data.frames_data[TIME_COL] >= tbounds[0]) & (data.frames_data[TIME_COL] <= tbounds[1])]
             density = self.data2density(data, class_id, tbounds, car_offset=car_offset)
             del plot_data 
             tod_flag = True 
@@ -952,11 +957,11 @@ class G:
         """
         output_dir, DoCs, delta, bin, density, class_id, bounds, car_offset, tod_flag = args
         try:
-            graph.plot_density_per_road_segment(output_dir, DoCs, delta, bin, density, class_id, bounds, car_offset=car_offset, tod_flag=tod_flag)
+            self.plot_density_per_road_segment(output_dir, DoCs, delta, bin, density, class_id, bounds, car_offset=car_offset, tod_flag=tod_flag)
             del args
             del density
         except Exception as e:
-            graph.log.error(f"Error in {bin}: {e}")
+            self.log.error(f"Error in {bin}: {e}")
             return 4
 
 
