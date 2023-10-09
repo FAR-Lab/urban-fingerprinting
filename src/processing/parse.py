@@ -60,16 +60,15 @@ def setup_logger():
 
 
 class Parser(): 
-    def __init__(self, PROJ_PATH, DAY_OF_COVERAGE): 
+    def __init__(self, DAY_OF_COVERAGE): 
         self.log = setup_logger()
 
-        self.NUM_CORES = int(os.getenv("SLURM_CPUS_ON_NODE")) or 30
+        self.NUM_CORES = int(os.getenv("SLURM_CPUS_ON_NODE") or 8)
 
-        self.PROJ_PATH = PROJ_PATH
         self.DAY_OF_COVERAGE = DAY_OF_COVERAGE
     
-        self.PREDICTIONS_REGEX = f"{PROJ_PATH}/{DAY_OF_COVERAGE}/*/*/uf_detections/exp/labels/*.txt"
-        self.IMAGES_REGEX = f"{PROJ_PATH}/{DAY_OF_COVERAGE}/*/*/*.jpg"  
+        self.PREDICTIONS_REGEX = f"../../output/yolo/{DAY_OF_COVERAGE}/*/exp*/labels/*.txt"
+        self.IMAGES_REGEX = f"../../output/yolo/{DAY_OF_COVERAGE}/frames_lists/*/*.jpg"  
 
         self.IMAGES_LIST = glob(self.IMAGES_REGEX)
         self.log.info(f"Number of images for {self.DAY_OF_COVERAGE}: {len(self.IMAGES_LIST)}")
@@ -78,8 +77,8 @@ class Parser():
 
         self.ALL_PREDICTIONS = pd.DataFrame(self.PREDICTIONS_LIST)
         self.ALL_PREDICTIONS.columns = ['path']
-        self.ALL_PREDICTIONS['frame_id'] = self.ALL_PREDICTIONS['path'].str.split('/').str[-1].str.split('.').str[0]
-        self.ALL_PREDICTIONS = self.ALL_PREDICTIONS.set_index('frame_id')
+        self.ALL_PREDICTIONS[IMG_ID] = self.ALL_PREDICTIONS['path'].str.split('/').str[-1].str.split('.').str[0]
+        self.ALL_PREDICTIONS = self.ALL_PREDICTIONS.set_index(IMG_ID)
 
         self.check_preds_paths()
 
@@ -116,9 +115,9 @@ class Parser():
         d = d.to_frame().T
         d.columns = [str(x) for x in d.columns]
 
-        d['frame_id'] = file_path.split('/')[-1].split('.')[0]
+        d[IMG_ID] = file_path.split('/')[-1].split('.')[0]
 
-        d = d.set_index('frame_id')
+        d = d.set_index(IMG_ID)
 
         d_dict = d.to_dict(orient='tight')
         del d 
@@ -137,7 +136,7 @@ class Parser():
         subsets = np.array_split(self.ALL_PREDICTIONS['path'].tolist(), 96)
         self.ALL_DETECTIONS = Parallel(n_jobs=self.NUM_CORES)(delayed(self.quick_extract_worker)(subset) for subset in tqdm(subsets, desc="Processing batches"))
         self.ALL_DETECTIONS = list(chain(*self.ALL_DETECTIONS))
-        print(self.ALL_DETECTIONS[:10])
+
         self.ALL_DETECTIONS = pd.concat([pd.DataFrame(l) for l in tqdm(self.ALL_DETECTIONS, desc='Creating detections dataframe...')], axis=1).T
 
         # drop path column 
@@ -151,6 +150,9 @@ class Parser():
         # sort columns by class id 
         self.ALL_DETECTIONS = self.ALL_DETECTIONS.reindex(sorted(self.ALL_DETECTIONS.columns), axis=1)
 
+        # make sure output dir exists
+        os.makedirs(f'../../output/df/{self.DAY_OF_COVERAGE}', exist_ok=True)
+
         self.ALL_PREDICTIONS.merge(self.ALL_DETECTIONS, left_index=True, right_index=True).to_csv(f'../../output/df/{self.DAY_OF_COVERAGE}/detections.csv')
 
         if len(self.ALL_DETECTIONS) != len(self.ALL_PREDICTIONS): 
@@ -158,9 +160,14 @@ class Parser():
   
         self.log.info(f"Saved detections for {self.DAY_OF_COVERAGE} to disk.")
 
-if __name__=='__main__':
-    p = Parser("/share/ju/nexar_data/nexar-scraper", "2023-08-12")
+
+def ui_wrapper(doc): 
+    p = Parser(doc)
     p.parse()
+
+
+if __name__ == '__main__':
+    fire.Fire(ui_wrapper)
 
 
 
