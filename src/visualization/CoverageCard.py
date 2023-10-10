@@ -10,12 +10,6 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
-import matplotlib.lines as mlines
-from matplotlib.collections import PatchCollection
-import matplotlib.colors as mcolors
-from matplotlib import cm
-import matplotlib as mpl
-
 
 from pathlib import Path
 
