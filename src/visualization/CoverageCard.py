@@ -16,6 +16,7 @@ import matplotlib.colors as mcolors
 from matplotlib import cm
 import matplotlib as mpl
 
+
 from pathlib import Path
 
 import calendar 
@@ -55,6 +56,15 @@ class CoverageCard():
         self.delta = self.days_of_coverage[-1] - self.days_of_coverage[0]
 
         self.attached_plot = attached_plot
+
+        self.cosmetics = {
+            "covered_color": "seagreen",
+            "missing_color": "linen",
+            "covered_alpha": 0.5,
+            "missing_alpha": 0.5,
+
+        }
+
     
     def latex(self, latex=True):
         """
@@ -136,11 +146,20 @@ class CoverageCard():
 
 
 
-    def plot_within_month(self):
+    def plot_within_month(self, data = None, ax = None, save=True):
 
-        earliest_day = self.days_of_coverage[0]
+        if data is None: 
+            data = self.days_of_coverage
+        else: 
+            data = data
 
-        fig, ax = plt.subplots(figsize=(9, 9))
+        earliest_day = data[0]
+
+        # set up figure and axis
+        if ax is None:
+            fig, ax = plt.subplots(figsize=(8, 8))
+        else:
+            fig = plt.gcf()
 
         box_height = 0.5 
         box_width = 0.5 
@@ -149,8 +168,8 @@ class CoverageCard():
         outer_padding_v = 0.05
 
         # set axis limits
-        ax.set_xlim(0, 7*box_height + 2*outer_padding_h)
-        ax.set_ylim(0, 5*box_width + 2*outer_padding_v)
+        ax.set_xlim(0, 7*box_width + 2*outer_padding_h)
+        ax.set_ylim(0, 6*box_height + 2*outer_padding_v)
 
         ax.set_frame_on(False)
 
@@ -158,55 +177,120 @@ class CoverageCard():
         ax.set_xticks([])
         ax.set_yticks([])
 
+        # get day of week for first day of month
+        first_of_month = earliest_day.replace(day=1)
+        first_of_month_day = first_of_month.weekday()
+
         # get number of days in month 
         num_days_in_month = calendar.monthrange(earliest_day.year, earliest_day.month)[1]
-        for day in [earliest_day + datetime.timedelta(days=x) for x in range(num_days_in_month)]:
-            row = 4 - int((day.day + earliest_day.weekday()) / 7)
+        for day in [first_of_month + datetime.timedelta(days=x) for x in range(num_days_in_month)]:
+            row = 5 - (day.day + first_of_month_day) // 7
+            # handle case where first day of month is a Sunday
+            if first_of_month_day == 6:
+                row += 1
+            
+
+
             col = (day.weekday() + 1) % 7
 
-            if day in self.days_of_coverage:
-                ax.add_patch(mpatches.Rectangle((col*box_width + outer_padding_h, row*box_height + outer_padding_v), box_width, box_height, facecolor='green', alpha=0.5, capstyle='round'))
+            if day in data:
+                ax.add_patch(mpatches.Rectangle((col*box_width + outer_padding_h, row*box_height + outer_padding_v), box_width, box_height, facecolor=self.cosmetics['covered_color'], alpha=self.cosmetics['covered_alpha'], capstyle='round'))
                 # add shadow around patch 
                 ax.add_patch(mpatches.Rectangle((col*box_width + outer_padding_h, row*box_height + outer_padding_v), box_width, box_height, facecolor='none', edgecolor='grey', linewidth=2, alpha=0.5, capstyle='round')) 
                 
                 # add label inplace 
-                ax.text(col*box_width + outer_padding_h + box_width/2, row*box_height + outer_padding_v + box_height/2, day.day, horizontalalignment='center', verticalalignment='center')
+                ax.text(col*box_width + outer_padding_h + box_width/2, 
+                        row*box_height + outer_padding_v + box_height/2, 
+                        day.day, horizontalalignment='center', verticalalignment='center')
             else:
-                ax.add_patch(mpatches.Rectangle((col*box_width + outer_padding_h, row*box_height + outer_padding_v), box_width, box_height, facecolor='red', alpha=0.15))
+                ax.add_patch(mpatches.Rectangle((col*box_width + outer_padding_h, row*box_height + outer_padding_v), box_width, box_height, facecolor=self.cosmetics['missing_color'], alpha=self.cosmetics['missing_alpha'], capstyle='round'))
                 ax.add_patch(mpatches.Rectangle((col*box_width + outer_padding_h, row*box_height + outer_padding_v), box_width, box_height, facecolor='none', edgecolor='grey', linewidth=1.5, alpha=0.5, capstyle='round')) 
                 # add label inplace
-                ax.text(col*box_width + outer_padding_h + box_width/2, row*box_height + outer_padding_v + box_height/2, day.day, horizontalalignment='center', verticalalignment='center')
+                ax.text(col*box_width + outer_padding_h + box_width/2, 
+                        row*box_height + outer_padding_v + box_height/2, 
+                        day.day, horizontalalignment='center', verticalalignment='center')
                 
 
         # plot legend
-        green_patch = mpatches.Patch(color='green', label='Day is in Plot')
-        red_patch = mpatches.Patch(color='red', label='Day Excluded')
-        plt.legend(handles=[green_patch, red_patch], loc='lower right', fancybox=True, framealpha=1)
+        green_patch = mpatches.Patch(color=self.cosmetics['covered_color'], label='Day is in Plot')
+        red_patch = mpatches.Patch(color=self.cosmetics['missing_color'], label='Day Excluded')
+        plt.legend(handles=[green_patch, red_patch], loc='lower right', 
+                   fancybox=True, framealpha=1)
         # move legend down
       
 
         # add title with month and year 
         if self.attached_plot != "": 
-            ax.set_title(self.attached_plot + "\n" + earliest_day.strftime("%B %Y")+'\n')
+            ax.set_title(self.attached_plot + "\n" + earliest_day.strftime("%B %Y")+'\n\n')
         else:
             ax.set_title(earliest_day.strftime("%B %Y")+"\n")
+
+        
+        
         
         # add days of week labels below title, and above the first row of data 
         for i in range(7):
             i_day = (i-1) % 7
-            ax.text(i*box_width + outer_padding_h + box_width/2, 4.6*box_height + outer_padding_v + box_height/2, calendar.day_abbr[i_day], horizontalalignment='center', verticalalignment='center')
+            ax.text(i*box_width + outer_padding_h + box_width/2, 5.65*box_height + outer_padding_v + box_height/2, calendar.day_abbr[i_day], horizontalalignment='center', verticalalignment='center')
 
     
+        if save:
+            plt.savefig(f'{Path(self.attached_plot).stem}_coverage_card.png', bbox_inches='tight')
 
-
-        plt.savefig(f'{Path(self.attached_plot).stem}_coverage_card.png')
+        return ax
 
 
 
 
 
     def plot_within_year(self):
-        pass
+    
+
+        # split days of coverage into months
+        months = {}
+        for day in self.days_of_coverage:
+            month = day.strftime('%B %Y')
+            if month not in months:
+                months[month] = []
+            months[month].append(day)
+        
+        # plot each month
+        # number of subplots = number of months 
+        num_subplots = len(months.keys())
+
+        # figure out optimal number of rows and columns
+        num_rows = 1
+        num_cols = 1
+        while num_rows * num_cols < num_subplots:
+            if num_rows == num_cols:
+                num_cols += 1
+            else:
+                num_rows += 1
+
+        # set number of rows and columns 
+        fig, axs = plt.subplots(num_rows, num_cols, figsize=(18, 18))
+        # turn off frames 
+        for ax in axs.flat:
+            ax.set_frame_on(False)
+        
+        # turn off axis 
+        for ax in axs.flat:
+            ax.set_xticks([])
+            ax.set_yticks([])
+        
+
+        # plot each month in corresponding subplot 
+        for idx, month in enumerate(months.keys()):
+            days = months[month]
+            # plot month in corresponding subplot 
+            plot_idx = np.unravel_index(idx, axs.shape)
+            
+            # add month plot to corresponding subplot
+            self.plot_within_month(days, axs[plot_idx], save=False)
+        
+
+        plt.savefig(f'{Path(self.attached_plot).stem}_coverage_card.png')
+
 
 
 
