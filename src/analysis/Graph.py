@@ -550,7 +550,7 @@ class G:
             """
             agg_dict = {}
             for class_id in cm.coco_classes.keys():
-                if str(class_id) in data.detections.columns.astype(str):
+                if str(class_id) in data.columns.astype(str):
                     agg_dict[str(class_id)] = operation
             return agg_dict
 
@@ -589,7 +589,7 @@ class G:
 
 
 
-        density = density.groupby(['u', 'v']).agg(self.coco_agg_mappings(data=data)).reset_index()
+        density = density.groupby(['u', 'v']).agg(self.coco_agg_mappings(data=detections)).reset_index()
 
         os.makedirs(f"../../output/df/density", exist_ok=True)
         density.describe().to_csv("../../output/df/density/density_describe.csv")
@@ -602,7 +602,7 @@ class G:
         return density
 
 
-    def data2density(self, data, class_id, dtbounds, car_offset=False):
+    def data2density(self, plot_data, plot_detections, plot_nearest_edges, class_id, car_offset=False):
         """
         Computes the density of a given class of objects in a set of frames.
 
@@ -617,31 +617,28 @@ class G:
         """
 
         if car_offset:
-            data.detections[str(class_id)] = data.detections[str(class_id)] + 1
-
-        md = data.frames_data
-        
-
-        md = md[(md[TIME_COL] >= dtbounds[0]) & (md[TIME_COL] <= dtbounds[1])]
+            plot_detections[str(class_id)] = plot_detections[str(class_id)] + 1
 
         
-        detections = data.detections 
-        detections.set_index(detections.iloc[:,0], inplace=True)
-        detections.fillna(0, inplace=True)
+
+        
+        
+        plot_detections.set_index(plot_detections.iloc[:,0], inplace=True)
+        plot_detections.fillna(0, inplace=True)
 
 
-        density = md.merge(detections, left_on=IMG_ID, right_index=True)
-        density = density.merge(data.nearest_edges, left_on=IMG_ID, right_on=IMG_ID)
+        density = plot_data.merge(plot_detections, left_on=IMG_ID, right_index=True)
+        density = density.merge(plot_nearest_edges, left_on=IMG_ID, right_on=IMG_ID)
         
 
 
 
-        density = density.groupby(['u', 'v']).agg(self.coco_agg_mappings(data=data))
+        density = density.groupby(['u', 'v']).agg(self.coco_agg_mappings(data=plot_detections))
         
 
-        del md 
-        del detections 
-        del data 
+        del plot_data
+        del plot_detections
+        del plot_nearest_edges
 
         return density
         
@@ -781,7 +778,7 @@ class G:
         # iterate through each subset
         for _, subset in subsets:
             # compute density of subset 
-            density = subset.groupby(['u', 'v']).agg(self.coco_agg_mappings(data=data)).reset_index()
+            density = subset.groupby(['u', 'v']).agg(self.coco_agg_mappings(data=detections)).reset_index()
             # get min and max of density
             min = density[str(class_id)].min()
             max = density[str(class_id)].max()
@@ -868,7 +865,9 @@ class G:
                 dtbounds = (bins[idx-6], bins[idx])
             #dtbounds = (bin, bin + pd.Timedelta(delta))
             plot_data = data.frames_data[(data.frames_data[TIME_COL] >= dtbounds[0]) & (data.frames_data[TIME_COL] <= dtbounds[1])]
-            density = self.data2density(data, class_id, dtbounds, car_offset=car_offset)
+            plot_detections = data.detections[data.detections.index.isin(plot_data[IMG_ID])]
+            plot_nearest_edges = data.nearest_edges[data.nearest_edges.index.isin(plot_data[IMG_ID])]
+            density = self.data2density(plot_data, plot_detections, plot_nearest_edges, class_id, car_offset=car_offset)
             del plot_data 
             tod_flag = False
             args.append((output_dir, DoCs, delta, bin, density, class_id, bounds, car_offset, tod_flag))
@@ -965,15 +964,25 @@ class G:
         # generate time bins 
         bins = pd.date_range(tbounds[0], tbounds[1], freq=delta)
         #bins = bins.tz_localize(TZ)
-        self.log.info(f"Generated {len(bins)} bins.")
+        self.log.info(f"Generated {len(bins)} time bins.")
 
         output_dir = uuid.uuid4().hex[:8]
 
         # generate cb norm and cmap 
         bounds = self.compute_density_range(DoCs, class_id, tbounds, delta, car_offset=car_offset, time_of_day_merge=True)
-        self.log.info(f"Computed density range for {DoCs}, lower bound: {bounds[0]}, upper bound: {bounds[1]}")
+        self.log.info(f"Computed overall density range for {DoCs}, lower bound: {bounds[0]}, upper bound: {bounds[1]}")
 
         args = [] 
+        def parallel_args_generator(args):
+            tbounds, plot_data, plot_detections, plot_nearest_edges = args 
+            
+            density = self.data2density(plot_data, plot_detections, plot_nearest_edges, class_id, car_offset=car_offset)
+            density = self.smoothing(density)
+            del plot_data 
+            tod_flag = True 
+            return ((output_dir, DoCs, delta, bin, density, class_id, bounds, car_offset, tod_flag))
+
+        first_it_args = []
         for idx, bin in tqdm(enumerate(bins), total=len(bins)): 
             # Sliding window 
             if idx < 6: 
@@ -982,11 +991,13 @@ class G:
                 tbounds = (bins[idx-6], bins[idx])
             #dtbounds = (bin, bin + pd.Timedelta(delta))
             plot_data = data.frames_data[(data.frames_data[TIME_COL] >= tbounds[0]) & (data.frames_data[TIME_COL] <= tbounds[1])]
-            density = self.data2density(data, class_id, tbounds, car_offset=car_offset)
-            density = self.smoothing(density)
-            del plot_data 
-            tod_flag = True 
-            args.append((output_dir, DoCs, delta, bin, density, class_id, bounds, car_offset, tod_flag))
+            plot_detections = data.detections[data.detections.index.isin(plot_data[IMG_ID])]
+            plot_nearest_edges = data.nearest_edges[data.nearest_edges.index.isin(plot_data[IMG_ID])]
+            first_it_args.append([tbounds, plot_data, plot_detections, plot_nearest_edges])
+        
+        args = Parallel(n_jobs=NUM_CORES)(delayed(parallel_args_generator)(arg) for arg in tqdm(first_it_args, desc="Generating arguments for plotting density over time of day."))
+        
+    
         
         self.log.info(f"Generated {len(args)} arguments for plotting density per road segment.")
         
