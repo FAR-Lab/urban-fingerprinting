@@ -1,3 +1,6 @@
 [submodule "src/cv/yolov7"]
 	path = src/cv/yolov7
 	url = git@github.com:WongKinYiu/yolov7.git
+[submodule "src/cv/FastSAM"]
+	path = src/cv/FastSAM
+	url = git@github.com:CASIA-IVA-Lab/FastSAM.git
