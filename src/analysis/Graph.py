@@ -8,6 +8,7 @@ import pandas as pd
 import numpy as np
 import geopandas as gpd 
 import osmnx as ox 
+import networkx as nx
 import os
 import sys 
 from glob import glob 
@@ -34,12 +35,13 @@ from shapely import wkt
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../..")))
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../../..")))
 
 from utils import coco_mappings as cm
 from visualization import AnimatedMap as am
 from DayOfCoverage import DayOfCoverage
 
-from users.params.data import LONGITUDE_COL, LATITUDE_COL, TIME_COL, COORD_CRS, PROJ_CRS, IMG_ID, TZ
+from user.params.data import LONGITUDE_COL, LATITUDE_COL, TIME_COL, COORD_CRS, PROJ_CRS, IMG_ID, TZ
 
 # Constant for number of workers to use in parallel, should be equal to number of cores on machine
 NUM_CORES = os.getenv("SLURM_CPUS_ON_NODE")
@@ -324,6 +326,65 @@ class G:
         self.log.info(f"Added detections to day of coverage {day_of_coverage}.")
         return 0
     
+    def smoothing(self, density): 
+        # only smooth if density dataframe is not empty
+        if not density.empty:   
+            # apply self.gaussian_kernel to each row of density
+            for i, row in tqdm(density.iterrows(), desc='Applying gaussian kernel...'):
+                density = self.gaussian_kernel(row, density)
+        
+        return density
+
+    def gaussian_kernel(self, row, density):
+        
+        
+        # get u,v from row index 
+        u, v = row.name
+        
+        # get all neighboring edges of u
+        u_in_neighbors = list(self.geo.in_edges(u))
+        u_out_neighbors = list(self.geo.out_edges(u))
+        u_neighbors = u_in_neighbors + u_out_neighbors
+
+        # get all neighboring edges of v
+        v_in_neighbors = list(self.geo.in_edges(v))
+        v_out_neighbors = list(self.geo.out_edges(v))
+        v_neighbors = v_in_neighbors + v_out_neighbors
+
+        # combine all neighbors, remove duplicates 
+        neighbors = list(set(u_neighbors + v_neighbors))
+
+        # get subset of density's edges that are in neighbors 
+        if density is not None:
+            density_neighbors = density[density.index.isin(neighbors)]
+
+        # get density of row 
+        density_row = density[density.index == (u, v)]
+
+        # add half of density_row to each neighbor
+        density_neighbors = density_neighbors + density_row / 2
+        self.log.debug(f"Added half of density of edge ({u}, {v}) to {len(density_neighbors.index)} neighbors.")
+
+        # update density with density_neighbors
+        density.update(density_neighbors)
+
+        return density 
+
+        
+
+        
+
+
+
+
+
+
+
+
+    
+
+
+        
     
 
     def plot_edges(self): 
@@ -575,7 +636,8 @@ class G:
 
 
 
-        density = density.groupby(['u', 'v']).agg(self.coco_agg_mappings(data=data)).reset_index()
+        density = density.groupby(['u', 'v']).agg(self.coco_agg_mappings(data=data))
+        
 
         del md 
         del detections 
@@ -921,6 +983,7 @@ class G:
             #dtbounds = (bin, bin + pd.Timedelta(delta))
             plot_data = data.frames_data[(data.frames_data[TIME_COL] >= tbounds[0]) & (data.frames_data[TIME_COL] <= tbounds[1])]
             density = self.data2density(data, class_id, tbounds, car_offset=car_offset)
+            density = self.smoothing(density)
             del plot_data 
             tod_flag = True 
             args.append((output_dir, DoCs, delta, bin, density, class_id, bounds, car_offset, tod_flag))
