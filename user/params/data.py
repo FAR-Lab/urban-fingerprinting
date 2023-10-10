@@ -17,3 +17,5 @@ PROJ_CRS = 'EPSG:2263'
 TZ = 'America/New_York'
 
 IMG_ID = 'frame_id'
+
+TOP_LEVEL_DIR = "/share/ju/nexar_data/2023"
