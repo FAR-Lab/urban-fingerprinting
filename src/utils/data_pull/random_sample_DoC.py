@@ -62,38 +62,60 @@ class ImagePull:
 
 
         # Coordinate filtering, if applicable 
-        if len(coords) > 0:
+        if coords and len(coords) > 0:
+            self.log.info(f"Filtering images to only include images within {proximity} meters of coords...")
 
             # coords needs to be a geodataframe, if not raise error 
             if not isinstance(coords, gpd.GeoDataFrame):
                 self.log.error("'coords' must be a geodataframe")
                 raise TypeError("coords must be a geodataframe")
 
-            self.image_list = gpd.GeoDataFrame(self.image_list,
-                geometry=gpd.points_from_xy(
-                    self.image_list["gps_info.longitude"], 
-                    self.image_list["gps_info.latitude"]), crs="EPSG:4326")
-                    
-            self.image_list = self.image_list.to_crs("EPSG:2263")
+            # if image list is not an instance of a geodataframe, make it one
+            if not isinstance(self.image_list, gpd.GeoDataFrame):
+                self.log.info("First run: converting image_list to geodataframe...")
+                self.image_list = gpd.GeoDataFrame(self.image_list,
+                    geometry=gpd.points_from_xy(
+                        self.image_list["gps_info.longitude"], 
+                        self.image_list["gps_info.latitude"]), crs="EPSG:4326")
+                        
+                self.image_list = self.image_list.to_crs("EPSG:2263")
             
+            # make sure 'index_left' and 'index_right' columns don't exist
+            if 'index_left' in self.image_list.columns:
+                self.image_list = self.image_list.drop(columns=['index_left'])
+            if 'index_right' in self.image_list.columns:
+                self.image_list = self.image_list.drop(columns=['index_right'])
+            
+            if 'index_left' in coords.columns:
+                coords = coords.drop(columns=['index_left'])
+            if 'index_right' in coords.columns:
+                coords = coords.drop(columns=['index_right'])
+
             # only pull images within proximity of coords
-            self.image_list = gpd.sjoin_nearest(self.image_list, coords,how='left',max_distance=proximity, distance_col='distance')
-            self.image_list = self.image_list[self.image_list['distance'] <= proximity]
+            close_images = gpd.sjoin_nearest(self.image_list, coords,how='left',max_distance=proximity, distance_col='distance')
+            close_images = close_images[close_images['distance'] <= proximity]
 
             if time_delta > 0:
                 self.log.info(f"Filtering images to only include images within {time_delta} minutes of nearest event in coords...")
                 # now, only keep images within 30 minutes of the flooding event 
-                self.image_list['captured_at'] = pd.to_datetime(self.image_list['captured_at'], unit='ms')
-                self.image_list['Created Date'] = pd.to_datetime(self.image_list['Created Date'])
+                close_images['captured_at'] = pd.to_datetime(close_images['captured_at'], unit='ms')
+                close_images['Created Date'] = pd.to_datetime(close_images['Created Date'])
 
-                self.image_list['time_diff'] = self.image_list['captured_at'] - self.image_list['Created Date']
-                self.image_list = self.image_list[self.image_list['time_diff'] <= pd.Timedelta(minutes=time_delta)]
+                close_images['time_diff'] = close_images['captured_at'] - close_images['Created Date']
+                close_images = close_images[close_images['time_diff'] <= pd.Timedelta(minutes=time_delta)]
 
-
+        else: 
+            self.log.info("No coords provided, using all images in image_list")
+            close_images = self.image_list
         
 
         # Randomly sample N images from image_list
-        sample = self.image_list.sample(n=self.N, random_state=1)
+        if len(close_images.index) > self.N:
+            sample = close_images.sample(n=self.N, random_state=1)
+        else: 
+            self.log.warning(f"Number of images in image_list is less than {self.N}, returning all images in image_list")
+            self.N = len(close_images.index)
+            sample = close_images
 
         dropped_files = 0
         # Copy sampled images to output_dir
@@ -103,15 +125,17 @@ class ImagePull:
             except IndexError:
                 self.log.warning(f"Could not find image {image} in {self.proj_path}/{self.DoC}")
                 dropped_files += 1
-            os.system(f"cp {img_path} {output_dir}")
+            os.system(f"cp {img_path} '{output_dir}'")
 
         self.log.info(f"Successfully copied {self.N} images to {output_dir}")
         if dropped_files > 0:
             self.log.warning(f"Could not find {dropped_files} images in {self.proj_path}/{self.DoC}")
 
+        del sample
+        del close_images
 
-        # Return number of images copied
-        return len(os.listdir(output_dir))
+        # Return path of output_dir
+        return output_dir
 
     def __run__(self, N, output_dir, coords=None, proximity=1000):
         self.N = N
