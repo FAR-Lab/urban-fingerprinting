@@ -8,6 +8,8 @@
 import sys 
 import os
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../..")))
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../../..")))
 from analysis.Graph import G
 
 import datetime 
@@ -15,7 +17,7 @@ import datetime
 # all days of coverage pulled in august with coverage > 0.95 
 augDoCs = ["2023-08-10", "2023-08-11", "2023-08-12", "2023-08-13", "2023-08-14", "2023-08-17", "2023-08-18", "2023-08-20", "2023-08-21", "2023-08-22", "2023-08-23", "2023-08-24", "2023-08-28", "2023-08-29", "2023-08-30", "2023-08-31"]
 # tunable subset of days of coverage for quicker testing 
-augDoCs_subset = augDoCs[0:3]
+augDoCs_subset = augDoCs[0:1]
 
 flood = ["2023-09-29"]
 
@@ -25,7 +27,7 @@ FRAMES_DIR = "/share/ju/nexar_data/nexar-scraper"
 GRAPHML_DIR = "/share/ju/urbanECG/data/geo/nyc.graphml"
 
 # flag to use subset of days of coverage
-SUBSET_FLAG = False 
+SUBSET_FLAG = True 
 
 if __name__ == "__main__":
     if SUBSET_FLAG: 
@@ -41,4 +43,4 @@ if __name__ == "__main__":
         except Exception as e:
             graph.log.error(f"Error in {day}: {e}")
 
-    graph.density_over_time_of_day_gif(DoCs, (datetime.datetime(2023,9,29,0,0,0), datetime.datetime(2023,9,29,23,59,59)), 2, delta="5min", car_offset=True)
+    graph.density_over_time_of_day_gif(DoCs, (datetime.datetime(2023,9,29,0,0,0), datetime.datetime(2023,9,29,23,59,59)), 2, delta="45min", car_offset=True)

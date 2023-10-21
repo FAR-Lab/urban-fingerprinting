@@ -19,9 +19,8 @@ class DayOfCoverage:
     -------
     None
     """
-    def __init__(self, day_of_coverage):
+    def __init__(self, day_of_coverage, frames_data = [], nearest_edges= [], detections = []):
         self.date = day_of_coverage 
-        self.frames_data = [] 
-        self.nearest_edges = [] 
-        self.nearest_edges_dist = []
-        self.detections = []
+        self.frames_data = frames_data
+        self.nearest_edges = nearest_edges
+        self.detections = detections
