@@ -41,12 +41,6 @@ import osmnx as ox
 
 import mapclassify as mc 
 
-
-
-log = setup_logger()
-
-log.info("Start of notebook.")
-
 # 
 PROJ_CRS = 'EPSG:2263'
 
