@@ -14,10 +14,15 @@ import sys
 from glob import glob 
 from PIL import Image
 
+
+
 import contextlib
 
 from fire import Fire
 from tqdm import tqdm
+tqdm.pandas()
+from tqdm.contrib.concurrent import process_map
+
 import matplotlib.pyplot as plt
 import matplotlib.style as mplstyle
 mplstyle.use(['ggplot', 'fast'])
@@ -26,6 +31,10 @@ from joblib import Parallel, delayed
 from itertools import chain 
 import datetime 
 import pytz
+
+
+
+import gc
 
 # Set up logging
 import logging
@@ -51,6 +60,8 @@ if NUM_CORES is None:
     NUM_CORES = 8
 else: 
     NUM_CORES = int(NUM_CORES)
+
+NUM_CORES = 8
 
 
 class G:
@@ -101,6 +112,8 @@ class G:
         self.geo = ox.io.load_graphml(graphml_input)
         self.gdf_nodes = ox.utils_graph.graph_to_gdfs(self.geo, edges=False)
         self.gdf_edges = ox.utils_graph.graph_to_gdfs(self.geo, nodes=False)
+
+        self.gc_counter = 0
         
         self.log.info("Graph loaded.")
 
@@ -284,7 +297,7 @@ class G:
         # Check if nearest edges have already been written to output
         if os.path.exists(f"../../output/df/{day_of_coverage}/nearest_edges.csv"):
             # read nearest edges from output 
-            nearest_edges = pd.read_csv(f"../../output/df/{day_of_coverage}/nearest_edges.csv", engine='pyarrow')
+            nearest_edges = pd.read_csv(f"../../output/df/{day_of_coverage}/nearest_edges.csv", engine='pyarrow', index_col=IMG_ID)
             # return nearest edges
             self.log.info(f"Loading nearest edges from output for day of coverage {day_of_coverage}.")
             DoC.nearest_edges = nearest_edges
@@ -320,18 +333,85 @@ class G:
         """
         Adds a GeoDataFrame object representing the detections for the given day of coverage to the graph.
         """
-        detections = pd.read_csv(f"../../output/df/{day_of_coverage}/detections.csv", engine='pyarrow')
+        detections = pd.read_csv(f"../../output/df/{day_of_coverage}/detections.csv", engine='pyarrow', index_col=0)
         DoC = self.get_day_of_coverage(day_of_coverage)
         DoC.detections = detections
         self.log.info(f"Added detections to day of coverage {day_of_coverage}.")
         return 0
+
+    # Starting by optimizing the gaussian_kernel function
+    def gaussian_kernel_optimized(self, row, density, precomputed_neighbors):
     
-    def smoothing(self, density): 
+        try:
+            # Retrieve u, v from row index
+            u, v = row.name
+            
+            # Use precomputed neighbors for u and v
+            neighbors_u = precomputed_neighbors.get(u, [])
+            neighbors_v = precomputed_neighbors.get(v, [])
+            
+            # Combine all neighbors, remove duplicates
+            neighbors = set(neighbors_u + neighbors_v)
+            
+            # Check if neighbors exist in the DataFrame index
+            existing_neighbors = list(neighbors.intersection(density.index))
+            
+            # Use .loc for faster DataFrame slicing with existing neighbors
+            density_neighbors = density.loc[existing_neighbors]
+            density_row = density.loc[(u, v)]
+            
+            # Vectorized operation to update density for neighbors (in-place operation)
+            density_neighbors += (density_row / len(existing_neighbors))
+            
+            # Return rows that need to be updated
+            density.update(density_neighbors)
+            
+            # Increment garbage collection counter
+            #self.gc_counter += 1
+
+            
+            #del neighbors 
+            #del density_row 
+            ##del existing_neighbors
+            #del neighbors_u
+            #del neighbors_v
+
+            # Conditional garbage collection every 1000 iterations
+            #if self.gc_counter % 1000 == 0:
+            #    gc.collect()
+            #    self.log.debug(f"Garbage collection performed. Counter: {self.gc_counter}")
+            #    self.gc_counter = 0  # Reset counter
+            
+        except KeyError as e:
+            self.log.error(f"KeyError in smoothing for edge ({u}, {v}): {str(e)}")
+
+            
+        
+    # Modify the smoothing function to include precomputed neighbors
+    def smoothing_optimized(self, density, idx, precomputed_neighbors):
+        if not density.empty:
+            # Apply self.gaussian_kernel_optimized to each row of density
+            tqdm.pandas(desc=f"Smoothing density for {idx}", position=idx, leave=True, total=len(density.index)) 
+            density.progress_apply(self.gaussian_kernel_optimized, axis=1, args=(density, precomputed_neighbors))
+
+        return density
+
+    # Function to precompute all neighbors for each node in the graph
+    def precompute_neighbors(self):
+        nodes = list(self.geo.nodes())
+        precomputed_neighbors = {}
+        for node in tqdm(nodes, desc='precomputing nodes of all neighbors in G...'):
+            in_neighbors = list(self.geo.in_edges(node))
+            out_neighbors = list(self.geo.out_edges(node))
+            precomputed_neighbors[node] = in_neighbors + out_neighbors
+        return precomputed_neighbors
+    
+    def smoothing(self, density, idx): 
         # only smooth if density dataframe is not empty
         if not density.empty:   
             # apply self.gaussian_kernel to each row of density
-            for i, row in tqdm(density.iterrows(), desc='Applying gaussian kernel...'):
-                density = self.gaussian_kernel(row, density)
+            tqdm.pandas(desc=f"Smoothing density for {idx}", position=idx, leave=True, total=len(density.index))
+            density = density.progress_apply(self.gaussian_kernel, axis=1, args=(density,))
         
         return density
 
@@ -358,15 +438,22 @@ class G:
         if density is not None:
             density_neighbors = density[density.index.isin(neighbors)]
 
+
         # get density of row 
         density_row = density[density.index == (u, v)]
 
-        # add half of density_row to each neighbor
-        density_neighbors = density_neighbors + density_row / 2
-        self.log.debug(f"Added half of density of edge ({u}, {v}) to {len(density_neighbors.index)} neighbors.")
+        # distribute density across neighbors
+        density_neighbors = density_neighbors + (density_row / len(neighbors))
+        self.log.debug(f"Distributed density of edge ({u}, {v}) to {len(density_neighbors.index)} neighbors.")
 
         # update density with density_neighbors
         density.update(density_neighbors)
+
+        del density_neighbors
+        del density_row
+        del neighbors
+        del u_neighbors
+
 
         return density 
 
@@ -578,7 +665,7 @@ class G:
 
         
         detections = data.detections 
-        detections.set_index(detections.iloc[:,0], inplace=True)
+        #detections.set_index(detections.iloc[:,0], inplace=True)
         detections.fillna(0, inplace=True)
 
         
@@ -616,24 +703,41 @@ class G:
             pandas.DataFrame: a DataFrame containing the density of the given class of objects in each edge of the road network.
         """
 
+        #("Plot_data", plot_data)
+        #print("Plot_detections", plot_detections)
+        #print("Plot_nearest_edges", plot_nearest_edges)
+
         if car_offset:
-            plot_detections[str(class_id)] = plot_detections[str(class_id)] + 1
+            plot_detections.loc[:,str(class_id)] = plot_detections.loc[:,str(class_id)] + 1
 
         
 
         
         
-        plot_detections.set_index(plot_detections.iloc[:,0], inplace=True)
-        plot_detections.fillna(0, inplace=True)
+        #plot_detections.set_index(plot_detections.iloc[:,0], inplace=True)
+        plot_detections = plot_detections.fillna(0)
 
+        try:
+            density = plot_data.merge(plot_detections, left_on=IMG_ID, right_index=True, how='left')
+        except Exception as e: 
+            self.log.error(f'data2density: Problem merging plot_data with plot_detections: {e}')
+            return 
 
-        density = plot_data.merge(plot_detections, left_on=IMG_ID, right_index=True)
-        density = density.merge(plot_nearest_edges, left_on=IMG_ID, right_on=IMG_ID)
+        try:
+            density = density.merge(plot_nearest_edges, left_on=IMG_ID, right_on=IMG_ID, how='left')
+        except Exception as e: 
+            self.log.error(f'data2density: Problem merging density with plot_nearest_edges: {e}')
+            return 
         
 
-
-
-        density = density.groupby(['u', 'v']).agg(self.coco_agg_mappings(data=plot_detections))
+        
+        try:
+            #print(self.coco_agg_mappings(data=plot_detections))
+            density = density.groupby(['u', 'v']).agg(self.coco_agg_mappings(data=plot_detections))
+            #print("density", density)
+        except Exception as e: 
+            self.log.error(f'data2density: Problem grouping density by u,v: {e}')
+            return 
         
 
         del plot_data
@@ -764,7 +868,7 @@ class G:
         md = md[(md[TIME_COL] >= dtbounds[0]) & (md[TIME_COL] <= dtbounds[1])]
 
         detections = data.detections
-        detections.set_index(detections.iloc[:,0], inplace=True)
+        #detections.set_index(detections.iloc[:,0], inplace=True)
         detections.fillna(0, inplace=True)
 
         md = md.merge(data.detections, left_on=IMG_ID, right_index=True)
@@ -864,9 +968,9 @@ class G:
             else:
                 dtbounds = (bins[idx-6], bins[idx])
             #dtbounds = (bin, bin + pd.Timedelta(delta))
-            plot_data = data.frames_data[(data.frames_data[TIME_COL] >= dtbounds[0]) & (data.frames_data[TIME_COL] <= dtbounds[1])]
-            plot_detections = data.detections[data.detections.index.isin(plot_data[IMG_ID])]
-            plot_nearest_edges = data.nearest_edges[data.nearest_edges.index.isin(plot_data[IMG_ID])]
+            plot_data = data.frames_data[(data.frames_data[TIME_COL] >= dtbounds[0]) & (data.frames_data[TIME_COL] <= dtbounds[1])].copy()
+            plot_detections = data.detections[data.detections.index.isin(plot_data[IMG_ID])].copy()
+            plot_nearest_edges = data.nearest_edges[data.nearest_edges.index.isin(plot_data[IMG_ID])].copy()
             density = self.data2density(plot_data, plot_detections, plot_nearest_edges, class_id, car_offset=car_offset)
             del plot_data 
             tod_flag = False
@@ -874,7 +978,7 @@ class G:
         
 
 
-        Parallel(n_jobs=NUM_CORES)(delayed(self.plot_density_per_road_segment_parallel)(arg) for arg in tqdm(args))
+        Parallel(n_jobs=NUM_CORES)(delayed(self.plot_density_per_road_segment_parallel)(arg) for arg in tqdm(args, desc="Generating density-over-datetime GIF frames."))
 
         # generate gif
         self.generate_gif(output_dir, class_id, DoCs, delta)
@@ -927,9 +1031,20 @@ class G:
         md[TIME_COL] = pd.to_datetime(md[TIME_COL], unit='ms')
         md[TIME_COL] = md[TIME_COL].dt.tz_localize('UTC').dt.tz_convert(TZ)
 
-        # Strip date from TIME_COL, only leave time of day 
-        # Add jan 1 1970 to TIME_COL
-        md[TIME_COL] = md[TIME_COL].apply(lambda dt: dt.replace(year=1970, month=1, day=1))
+        # Merge datetimes by setting date to 1970-01-01
+        try:
+            md[TIME_COL] = md[TIME_COL].apply(lambda x: x.replace(year=1970, month=1, day=1))
+        except Exception as e:
+            self.log.error(f"Error in merging days of coverage: {e}")
+        
+
+        
+
+        
+
+
+        self.log.info(f"Stripped date from {TIME_COL} column.")
+        self.log.info(f"{len(md)} rows in merged metadata, with time stpread from {md[TIME_COL].min()} to {md[TIME_COL].max()}")
     
         # Sort by TIME_COL
         md = md.sort_values(by=[TIME_COL])
@@ -937,6 +1052,31 @@ class G:
         return DayOfCoverage("merged", md, nearest_edges, detections)
 
     
+    def parallel_args_generator(self, args):
+            idx, output_dir, DoCs, delta, tbounds, plot_data, plot_detections, plot_nearest_edges, class_id, bounds, car_offset, tod_flag = args 
+            
+            # exceptions are handled within data2density code
+            density = self.data2density(plot_data, plot_detections, plot_nearest_edges, class_id, car_offset=car_offset)
+
+            copy_of_neighbors = self.precomputed_neighbors.copy()
+
+            try:
+                density = self.smoothing_optimized(density, idx, copy_of_neighbors)
+            except Exception as e: 
+                self.log.error(f"Error in smoothing for {tbounds}: {e}")
+                return
+
+            del plot_data
+            del plot_detections
+            del plot_nearest_edges
+            del copy_of_neighbors
+            
+            tod_flag = True 
+            self.log.info(f"Generated density for {idx}, returning.")
+            
+            return [output_dir, DoCs, delta, bin, density, class_id, bounds, car_offset, tod_flag]
+            
+
     def density_over_time_of_day_gif(self, DoCs, tbounds, class_id, delta="60min", car_offset=False):
         """
         Generates a GIF animation showing the density of a given class of objects over time of day, for a given time range.
@@ -973,14 +1113,8 @@ class G:
         self.log.info(f"Computed overall density range for {DoCs}, lower bound: {bounds[0]}, upper bound: {bounds[1]}")
 
         args = [] 
-        def parallel_args_generator(args):
-            tbounds, plot_data, plot_detections, plot_nearest_edges = args 
-            
-            density = self.data2density(plot_data, plot_detections, plot_nearest_edges, class_id, car_offset=car_offset)
-            density = self.smoothing(density)
-            del plot_data 
-            tod_flag = True 
-            return ((output_dir, DoCs, delta, bin, density, class_id, bounds, car_offset, tod_flag))
+        
+        self.precomputed_neighbors = self.precompute_neighbors()
 
         first_it_args = []
         for idx, bin in tqdm(enumerate(bins), total=len(bins)): 
@@ -990,13 +1124,26 @@ class G:
             else:
                 tbounds = (bins[idx-6], bins[idx])
             #dtbounds = (bin, bin + pd.Timedelta(delta))
-            plot_data = data.frames_data[(data.frames_data[TIME_COL] >= tbounds[0]) & (data.frames_data[TIME_COL] <= tbounds[1])]
-            plot_detections = data.detections[data.detections.index.isin(plot_data[IMG_ID])]
-            plot_nearest_edges = data.nearest_edges[data.nearest_edges.index.isin(plot_data[IMG_ID])]
-            first_it_args.append([tbounds, plot_data, plot_detections, plot_nearest_edges])
+            try: 
+                plot_data = data.frames_data[(data.frames_data[TIME_COL] >= tbounds[0]) & (data.frames_data[TIME_COL] <= tbounds[1])]
+                #print(tbounds, plot_data[IMG_ID])
+                #print(tbounds, data.detections.index)
+                #print(tbounds, data.nearest_edges.index)
+                # get detections rows that correspond to frames in plot_data 
+                
+                plot_detections = data.detections[data.detections.index.isin(plot_data[IMG_ID])]
+                plot_nearest_edges = data.nearest_edges[data.nearest_edges.index.isin(plot_data[IMG_ID])]
+
+                if len(plot_data) != len(plot_nearest_edges):
+                    self.log.warning(f"Lengths of plot data ({len(plot_data)}) and plot nearest edges ({len(plot_nearest_edges)}) do not match for {tbounds}.")
+            
+                first_it_args.append([idx, output_dir, DoCs, delta, tbounds, plot_data, plot_detections, plot_nearest_edges, class_id, bounds, car_offset, True])
+            except Exception as e:
+                self.log.error(f"Error in first it args generation for {tbounds}: {e}")
+                continue
         
-        args = Parallel(n_jobs=NUM_CORES)(delayed(parallel_args_generator)(arg) for arg in tqdm(first_it_args, desc="Generating arguments for plotting density over time of day."))
-        
+
+        args = Parallel(n_jobs=3)(delayed(self.parallel_args_generator)(arg) for arg in tqdm(first_it_args, desc="Generating arguments for density plotting."))
     
         
         self.log.info(f"Generated {len(args)} arguments for plotting density per road segment.")
@@ -1032,8 +1179,7 @@ class G:
         output_dir, DoCs, delta, bin, density, class_id, bounds, car_offset, tod_flag = args
         try:
             self.plot_density_per_road_segment(output_dir, DoCs, delta, bin, density, class_id, bounds, car_offset=car_offset, tod_flag=tod_flag)
-            del args
-            del density
+           
         except Exception as e:
             self.log.error(f"Error in {bin}: {e}")
             return 4
