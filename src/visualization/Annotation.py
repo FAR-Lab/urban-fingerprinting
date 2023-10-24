@@ -83,7 +83,7 @@ class AnnotationViewer:
 
 
 
-        if class_id > 0: 
+        if class_id != -1: 
             annotations = annotations[annotations['class'] == class_id]
         
         for _, annotation in annotations.iterrows(): 
@@ -126,6 +126,46 @@ class AnnotationViewer:
 
 
 
+    def save_crops(self, frame_id, annotations, class_id=-1):
+        # get path of image for frame_id 
+        frame_id = str(frame_id)
+        frame_path = glob(f"{self.pulled_imgs_dir}/{frame_id}.jpg")[0]
+        frame = Image.open(frame_path)
+        frame = np.array(frame)
+        #frame = np.flip(frame, axis=2)
+        #frame = np.flip(frame, axis=1)
+        #frame = np.flip(frame, axis=0)
+        print(frame.shape)
+        
+
+
+
+        if class_id != -1: 
+            annotations = annotations[annotations['class'] == class_id]
+        
+        for idx, annotation in annotations.iterrows(): 
+            class_id, x, y, w, h, conf = annotation
+
+            # convert from normalized to pixel coordinates
+            x = float(x) * frame.shape[1]
+            y = float(y) * frame.shape[0]
+            w = float(w) * frame.shape[1]
+            h = float(h) * frame.shape[0]
+
+            bottom_left = (x - w/2, y - h/2)
+            top_center = (x, y - h/2)
+
+            # crop image
+            crop = frame[int(y-h/2):int(y+h/2), int(x-w/2):int(x+w/2)]
+
+            # make sure output dire exists if not create it
+            if not os.path.exists(f"../../output/annotation_viewer/{class_id}"):
+                os.makedirs(f"../../output/annotation_viewer/{class_id}")
+            
+            # save crop
+            plt.imsave(f"../../output/annotation_viewer/{class_id}/{frame_id}_{idx}.png", crop)
+            
+
 
 
         
@@ -138,6 +178,7 @@ class AnnotationViewer:
         first_frame_id = os.path.basename(first_frame).split(".")[0]
         annotations = self.get_annotations(first_frame_id)
         self.visualize_annotations(first_frame_id, annotations)
+        self.save_crops(first_frame_id, annotations, class_id=0)
         
         
         
