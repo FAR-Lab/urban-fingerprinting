@@ -575,7 +575,7 @@ class G:
         """
         gif = am.AnimatedChloropleth(self, DoCs)
         gif.set_roads(self.geo)
-        gif.generate_frames(TIME_COL, "2", "10min", "bin", car_offset=True)
+        gif.generate_frames(TIME_COL, "2", "10min", "b", car_offset=True)
         gif.generate_gif()
 
     def join_days(self, DoCs): 
@@ -747,7 +747,7 @@ class G:
         return density
         
         
-    def plot_density_per_road_segment(self, output_dir, DoCs, delta, bin, density, class_id, ax_bounds=(0,100), binned=True, car_offset=False, tod_flag=False): 
+    def plot_density_per_road_segment(self, output_dir, DoCs, delta, b, density, class_id, ax_bounds=(0,100), binned=True, car_offset=False, tod_flag=False): 
         """
         Plots the density of a given class of objects per road segment, using a choropleth map.
 
@@ -759,11 +759,9 @@ class G:
             The dates of the data to be plotted.
         delta : int
             The time interval in minutes between each data point.
-        bin : datetime.datetime
+        b : datetime.datetime
             The time of the data point to be plotted.
         density : pandas.DataFrame
-            A DataFrame containing the density of objects per road segment.
-        class_id : int
             The ID of the class of objects to be plotted.
         ax_bounds : tuple of float, optional
             The minimum and maximum values for the colorbar.
@@ -817,10 +815,15 @@ class G:
         ax.set_axis_off()
         ax.margins(0)
 
-        if tod_flag: 
-            ax.set_title(f"Average Num. of {cm.coco_classes[str(class_id)]}s per road segment \n {DoCs[0]}-{DoCs[-1]} \n {bin.strftime('%H:%M')}")
+        if tod_flag:
+            try: 
+                ax.set_title(f"Average Num. of {cm.coco_classes[str(class_id)]}s per road segment \n {DoCs[0]}-{DoCs[-1]} \n {b.strftime('%H:%M')}")
+            except Exception as e:
+                self.log.error(f'plot_density_per_road_segment: Problem setting title: {e}')
+                ax.set_title(f"Average Num. of {cm.coco_classes[str(class_id)]}s per road segment \n {DoCs[0]}-{DoCs[-1]} \n {b}")
+                
         else:
-            ax.set_title(f"Average Num. of {cm.coco_classes[str(class_id)]}s per road segment \n {DoCs[0]}-{DoCs[-1]} \n {bin}")
+            ax.set_title(f"Average Num. of {cm.coco_classes[str(class_id)]}s per road segment \n {DoCs[0]}-{DoCs[-1]} \n {b}")
         ax.title.set_size(50)
         # Move title up 
         ax.title.set_position([.5, 1.05])
@@ -912,7 +915,7 @@ class G:
         Create a custom, continuous legend with a color map and normalized bins.
 
         Args:
-            bounds (list): A list of bin boundaries.
+            bounds (list): A list of b boundaries.
 
         Returns:
             tuple: A tuple containing the normalized bins and the custom color map.
@@ -961,24 +964,26 @@ class G:
         bounds = self.compute_density_range(DoCs, class_id, dtbounds, delta, car_offset=car_offset)
 
         args = [] 
-        for idx, bin in enumerate(bins): 
+        for idx, b in enumerate(bins): 
             # Sliding window 
             if idx < 6: 
                 dtbounds = (bins[0], bins[idx])
             else:
                 dtbounds = (bins[idx-6], bins[idx])
-            #dtbounds = (bin, bin + pd.Timedelta(delta))
+            #dtbounds = (b, b + pd.Timedelta(delta))
             plot_data = data.frames_data[(data.frames_data[TIME_COL] >= dtbounds[0]) & (data.frames_data[TIME_COL] <= dtbounds[1])].copy()
             plot_detections = data.detections[data.detections.index.isin(plot_data[IMG_ID])].copy()
             plot_nearest_edges = data.nearest_edges[data.nearest_edges.index.isin(plot_data[IMG_ID])].copy()
             density = self.data2density(plot_data, plot_detections, plot_nearest_edges, class_id, car_offset=car_offset)
             del plot_data 
             tod_flag = False
-            args.append((output_dir, DoCs, delta, bin, density, class_id, bounds, car_offset, tod_flag))
+            args.append((output_dir, DoCs, delta, b, density, class_id, bounds, car_offset, tod_flag))
         
 
 
         Parallel(n_jobs=NUM_CORES)(delayed(self.plot_density_per_road_segment_parallel)(arg) for arg in tqdm(args, desc="Generating density-over-datetime GIF frames."))
+
+        self.log.info("Generating GIF with id {output_dir}...")
 
         # generate gif
         self.generate_gif(output_dir, class_id, DoCs, delta)
@@ -1053,7 +1058,7 @@ class G:
 
     
     def parallel_args_generator(self, args):
-            idx, output_dir, DoCs, delta, tbounds, plot_data, plot_detections, plot_nearest_edges, class_id, bounds, car_offset, tod_flag = args 
+            idx, output_dir, DoCs, delta, tbounds, plot_data, plot_detections, plot_nearest_edges, class_id, b, car_offset, tod_flag = args 
             
             # exceptions are handled within data2density code
             density = self.data2density(plot_data, plot_detections, plot_nearest_edges, class_id, car_offset=car_offset)
@@ -1067,14 +1072,12 @@ class G:
                 return
 
             del plot_data
-            del plot_detections
-            del plot_nearest_edges
             del copy_of_neighbors
             
             tod_flag = True 
             self.log.info(f"Generated density for {idx}, returning.")
             
-            return [output_dir, DoCs, delta, bin, density, class_id, bounds, car_offset, tod_flag]
+            return [output_dir, DoCs, delta, tbounds, density, class_id, b, car_offset, tod_flag]
             
 
     def density_over_time_of_day_gif(self, DoCs, tbounds, class_id, delta="60min", car_offset=False):
@@ -1117,13 +1120,13 @@ class G:
         self.precomputed_neighbors = self.precompute_neighbors()
 
         first_it_args = []
-        for idx, bin in tqdm(enumerate(bins), total=len(bins)): 
+        for idx, b in tqdm(enumerate(bins), total=len(bins)): 
             # Sliding window 
             if idx < 6: 
                 tbounds = (bins[0], bins[idx])
             else:
                 tbounds = (bins[idx-6], bins[idx])
-            #dtbounds = (bin, bin + pd.Timedelta(delta))
+            #dtbounds = (b, b + pd.Timedelta(delta))
             try: 
                 plot_data = data.frames_data[(data.frames_data[TIME_COL] >= tbounds[0]) & (data.frames_data[TIME_COL] <= tbounds[1])]
                 #print(tbounds, plot_data[IMG_ID])
@@ -1166,7 +1169,7 @@ class G:
                 output_dir (str): The output directory for the plot.
                 DoCs (list): A list of days of coverage to plot.
                 delta (float): The delta value for the plot.
-                bin (str): The bin for the plot.
+                b (str): The b for the plot.
                 density (str): The density for the plot.
                 class_id (str): The class ID for the plot.
                 bounds (list): A list of bounds for the plot.
@@ -1176,12 +1179,12 @@ class G:
         Returns:
             int: Returns 4 if there is an error, otherwise returns None.
         """
-        output_dir, DoCs, delta, bin, density, class_id, bounds, car_offset, tod_flag = args
+        output_dir, DoCs, delta, b, density, class_id, bounds, car_offset, tod_flag = args
         try:
-            self.plot_density_per_road_segment(output_dir, DoCs, delta, bin, density, class_id, bounds, car_offset=car_offset, tod_flag=tod_flag)
+            self.plot_density_per_road_segment(output_dir, DoCs, delta, b, density, class_id, bounds, car_offset=car_offset, tod_flag=tod_flag)
            
         except Exception as e:
-            self.log.error(f"Error in {bin}: {e}")
+            self.log.error(f"Error in {b}: {e}")
             return 4
 
 

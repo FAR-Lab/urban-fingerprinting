@@ -13,6 +13,6 @@ import datetime
 if __name__ == '__main__':
 
     # create CoverageCard object
-    viz = AnnotationViewer("2023-09-29")
+    viz = AnnotationViewer("2023-08-18")
 
     viz()

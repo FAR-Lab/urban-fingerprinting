@@ -4,6 +4,15 @@
 
 while true
 do
-    find $1 -type f | wc -l
-    sleep 10
+    sum=0
+    for i in {0..63}
+    do
+        directory="$1/$i"
+        if [ -d "$directory" ]; then
+            num=$(find "$directory" -type f | wc -l)
+            sum=$((sum + num))
+        fi
+    done
+    echo $sum
+    sleep 60
 done
