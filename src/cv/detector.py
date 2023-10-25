@@ -7,6 +7,7 @@ import shlex
 import glob 
 import os 
 import logging 
+import subprocess
 import asyncio 
 import fire
 import pandas as pd 
@@ -97,6 +98,8 @@ class YOLO_Detector:
                 with open(f'{frames_list_path}/chunk_{idx}.txt', 'w') as f: 
                     f.write(chunk)
                 files_list.append(f'{frames_list_path}/chunk_{idx}.txt')
+
+            del chunks 
             
             return files_list
     
@@ -115,23 +118,46 @@ class YOLO_Detector:
                     frame = frame.strip()
                     frame_name = frame.split('/')[-1]
                     os.symlink(frame, f'{frames_list_path}/{os.path.splitext(os.path.basename(frames_list))[0]}/{frame_name}')
+            
+            f.close()
 
         return batch_paths
 
 
-    async def detect(self, frames_list_path, worker_id):
-        async with self.semaphores[worker_id]:
-            detect_cmd = f'python {self.YOLO_DIR}/detect.py --weights {self.YOLO_WEIGHTS} --source  {frames_list_path} --save-txt --save-conf --project {self.OUTPUT_DIR}/{self.DAY_OF_COVERAGE}  --device {worker_id} --img-size 1280 --nosave --conf-thres 0.5 --augment --exist-ok'
-            detect_cmd = shlex.split(detect_cmd)
-            print(detect_cmd)
-            proc = await asyncio.create_subprocess_exec(*detect_cmd)
-            returncode = await proc.wait()
-            print(f'Worker {worker_id} finished processing {frames_list_path} with return code {returncode}')
+    async def detect(self, frames_list_path, worker_id, gpu_id):
+        # make sure project dir exists 
+        os.makedirs(f'{self.OUTPUT_DIR}/{self.DAY_OF_COVERAGE}/{worker_id}', exist_ok=True)
+        async with self.semaphores[gpu_id]:
+            try: 
+                detect_cmd = f'python {self.YOLO_DIR}/detect.py --weights {self.YOLO_WEIGHTS} --source  {frames_list_path} --save-txt --save-conf --project {self.OUTPUT_DIR}/{self.DAY_OF_COVERAGE}/{worker_id}  --device {gpu_id} --img-size 1280 --nosave --conf-thres 0.5 --augment'
+                detect_cmd = shlex.split(detect_cmd)
+                print(detect_cmd)
+                proc = await asyncio.create_subprocess_exec(*detect_cmd)
+                returncode = await proc.wait()
+                print(f'Worker {worker_id} finished processing {frames_list_path} with return code {returncode}')
+            finally: 
+                self.semaphores[gpu_id].release()
 
     
+    def run_detect_scripts(self): 
+        # make sure project dir exists 
+        os.makedirs(f'{self.OUTPUT_DIR}/{self.DAY_OF_COVERAGE}', exist_ok=True)
+
+        # run slurm script 
+        slurm_cmds = []
+        for i in range(self.NUM_GPUS):
+            slurm_cmd = f'sbatch ../../jobs/detector_w1.sub {self.DAY_OF_COVERAGE} {i}'
+            slurm_cmds.append(slurm_cmd)
+        
+        for slurm_cmd in slurm_cmds:
+            slurm_cmd = shlex.split(slurm_cmd)
+            #subprocess.run(slurm_cmd)
+        
+        
+
     def queue_detect_tasks(self, n_workers=4, write_frames_lists=True): 
-        loop = asyncio.get_event_loop()
-        tasks = [] 
+        
+        
         # can fit 16 detection tasks on a single GPU 
         if write_frames_lists:
 
@@ -141,12 +167,9 @@ class YOLO_Detector:
         else: 
             batch_paths = [f"{self.OUTPUT_DIR}/{self.DAY_OF_COVERAGE}/frames_lists/chunk_{idx}" for idx in range(n_workers * self.MAX_TASKS_PER_GPU)]
 
-        for idx, frames_dir in enumerate(batch_paths): 
-            worker_id = idx % n_workers
-            tasks.append(asyncio.ensure_future(self.detect(frames_dir, worker_id)))
+        self.run_detect_scripts()
         
-        loop.run_until_complete(asyncio.gather(*tasks))
-        loop.close()
+        
 
 
 def ui_wrapper(TOP_LEVEL_DIR, DAY_OF_COVERAGE): 

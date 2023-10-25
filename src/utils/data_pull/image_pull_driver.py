@@ -12,13 +12,13 @@ import geopandas as gpd
 
 
 if __name__ == '__main__':
-    instance = ImagePull("/share/ju/nexar_data/nexar-scraper","2023-09-29")
+    instance = ImagePull("/share/ju/nexar_data/2023","2023-08-18")
 
-    flooding = pd.read_csv("../../../data/coords/sep29_flooding.csv", engine='pyarrow')
-    flooding = gpd.GeoDataFrame(flooding, geometry=gpd.points_from_xy(flooding.Longitude, flooding.Latitude), crs="EPSG:4326")
-    flooding = flooding.to_crs("EPSG:2263")
+    #flooding = pd.read_csv("../../../data/coords/sep29_flooding.csv", engine='pyarrow')
+    #flooding = gpd.GeoDataFrame(flooding, geometry=gpd.points_from_xy(flooding.Longitude, flooding.Latitude), crs="EPSG:4326")
+    #flooding = flooding.to_crs("EPSG:2263")
 
-    instance.pull_images(1000, "flooding_filtered_on_311_w_time_prox", coords=flooding, proximity=100)
+    instance.pull_images(100000, "ped_cropping_test")
     
 
 

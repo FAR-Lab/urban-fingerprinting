@@ -16,6 +16,8 @@ import geopandas as gpd
 from pathlib import Path
 import numpy as np
 
+from tqdm.contrib.concurrent import process_map
+
 class ImagePull:
     def __init__(self, proj_path, DoC): 
         self.log = logging.getLogger(__name__)
@@ -48,7 +50,7 @@ class ImagePull:
         self.log.info(f"Initialized ImagePull with DoC={self.DoC}")
 
     
-    def pull_images(self, N, output_dir, coords=None, proximity=1000, time_delta=-1):
+    def pull_images(self, N, output_dir, coords=pd.DataFrame(), proximity=50, time_delta=-1):
         self.N = N 
         # Prepend 'output' to output_dir
         output_dir = os.path.join("output", output_dir)
@@ -62,8 +64,8 @@ class ImagePull:
 
 
         # Coordinate filtering, if applicable 
-        if coords and len(coords) > 0:
-            self.log.info(f"Filtering images to only include images within {proximity} meters of coords...")
+        if (len(coords) > 0):
+            self.log.info(f"Filtering images to only include images within {proximity} feet of coords...")
 
             # coords needs to be a geodataframe, if not raise error 
             if not isinstance(coords, gpd.GeoDataFrame):
@@ -119,6 +121,7 @@ class ImagePull:
 
         dropped_files = 0
         # Copy sampled images to output_dir
+        #for image in process_map(lambda x: f"{x}.jpg", sample['frame_id'], desc=f"Copying images to {output_dir}"):
         for image in tqdm(sample['frame_id'].apply(lambda x: f"{x}.jpg"), desc=f"Copying images to {output_dir}"):
             try:
                 img_path = glob(os.path.join(self.proj_path, self.DoC, "*", "*", image))[0]

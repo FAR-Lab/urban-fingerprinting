@@ -107,10 +107,12 @@ class SampleOverTime(object):
         fig, ax = plt.subplots(figsize=(20,20))
 
         self.background.plot(ax=ax, color='white', edgecolor='black', alpha=0.5)
-        self.roads.plot(ax=ax, color='black', alpha=0.4, linewidth=1)
-        df.plot(ax=ax, color='red', markersize=1.5, alpha=0.5)
+        self.roads.plot(ax=ax, color='gray', alpha=0.15, linewidth=1)
+        df.plot(ax=ax, color='red', markersize=1, alpha=0.5)
 
         ax.set_title(f"Sample Over Time: {idx}", fontsize=20)
+        # padding above title 
+        plt.subplots_adjust(top=0.90)
         
         plt.axis('off')
 
@@ -156,7 +158,8 @@ class SampleOverTime(object):
 
     def __call__(self): 
         self.add_background()
-        self.generate_frames()
+        self.add_roads()
+        self.generate_frames(num_points_per_frame=200000)
         self.generate_gif()
 
 
