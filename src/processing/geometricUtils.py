@@ -29,7 +29,59 @@ class Frame():
         self.heading = md_row[ORIENTATION_COL]
 
     def distance(self, other):
-        return np.sqrt((self.lng - other.lng)**2 + (self.lat - other.lat)**2)
+        match other: 
+            case Frame():
+                return np.sqrt((self.lng - other.lng)**2 + (self.lat - other.lat)**2)
+            case (float(), float()):
+                return np.sqrt((self.lng - other[0])**2 + (self.lat - other[1])**2)
+    
+    def angle(self, other):
+        match other: 
+            case Frame():
+                return np.rad2deg(np.arctan2(other.lat - self.lat, other.lng - self.lng))
+            case (float(), float()):
+                return np.rad2deg(np.arctan2(other[1] - self.lat, other[0] - self.lng))
+
+    def angle_btwn(self, other): 
+        match other: 
+            case Frame():
+                return np.abs(self.heading - other.heading) 
+            case float(): 
+                return np.abs(self.heading - other)
+        
+
+
+    def depicts_coordinates(self, coordinates: tuple):
+        # compute angle between self and coordinates
+
+        angle = self.angle(coordinates)
+
+        # compute difference between angle and heading
+        # if difference is within view cone, pass 
+        # else, fail
+
+        if self.angle_btwn(angle) > VIEW_CONE:
+            return False
+
+        # now, compute distance between self and coordinates
+        # if distance is within view distance, pass
+        # else, fail
+        if self.distance(coordinates) > VIEW_DISTANCE:
+            return False
+        
+        return True 
+
+        
+
+
+            
+
+
+
+        
+
+
+
     
     def __str__(self):
         return f"Frame {self.id} at {self.location}, captured at {self.captured_at}"
