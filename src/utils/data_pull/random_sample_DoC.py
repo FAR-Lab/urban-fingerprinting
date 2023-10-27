@@ -6,6 +6,12 @@
 
 # Module Imports 
 import os 
+import sys 
+
+sys.path.append(os.path.abspath(os.path.join('../..', 'src')))
+
+from src.processing.geometricUtils import Frame, Perspective
+
 from glob import glob
 import random
 import logging 
@@ -97,6 +103,11 @@ class ImagePull:
             close_images = gpd.sjoin_nearest(self.image_list, coords,how='left',max_distance=proximity, distance_col='distance')
             close_images = close_images[close_images['distance'] <= proximity]
 
+            # out of these images, only keep those that actually depict the coordinates
+            close_images = close_images[close_images.apply(lambda x: Frame(x)
+                                                           .depicts_coordinates((x['Longitude'], x['Latitude'])), axis=1)]
+
+
             if time_delta > 0:
                 self.log.info(f"Filtering images to only include images within {time_delta} minutes of nearest event in coords...")
                 # now, only keep images within 30 minutes of the flooding event 
@@ -128,6 +139,9 @@ class ImagePull:
             except IndexError:
                 self.log.warning(f"Could not find image {image} in {self.proj_path}/{self.DoC}")
                 dropped_files += 1
+
+            #snew_img_name = f"{os.path.splitext(os.path.basename(img_path))[0]}
+
             os.system(f"cp {img_path} '{output_dir}'")
 
         self.log.info(f"Successfully copied {self.N} images to {output_dir}")
