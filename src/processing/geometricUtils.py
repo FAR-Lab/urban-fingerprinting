@@ -10,12 +10,15 @@ import os
 
 sys.path.append(os.path.abspath(os.path.join('../..', 'src')))
 
+import math
 
 from user.params.data import *
 
 import numpy as np
 import pandas as pd 
 import geopandas as gpd 
+
+from src.utils.logger import setup_logger
 
 
 # Class Definitions 
@@ -27,6 +30,8 @@ class Frame():
         self.captured_at = md_row[TIME_COL]
         self.location = (self.lng, self.lat)
         self.heading = md_row[ORIENTATION_COL]
+        self.direction = md_row[DIRECTION_COL]
+        self.log = setup_logger(name=self.id)
 
     def distance(self, other):
         match other: 
@@ -38,9 +43,45 @@ class Frame():
     def angle(self, other):
         match other: 
             case Frame():
-                return np.rad2deg(np.arctan2(other.lat - self.lat, other.lng - self.lng))
+                pass
+                
             case (float(), float()):
-                return np.rad2deg(np.arctan2(other[1] - self.lat, other[0] - self.lng))
+                lng = other[0]
+                lat = other[1] 
+
+                delta_lon = lng - self.lng 
+
+                x = math.atan2(math.sin(delta_lon) * math.cos(lat),
+                   math.cos(self.lat) * math.sin(lat) - math.sin(self.lat) * math.cos(lat) * math.cos(delta_lon))
+
+                x = math.degrees(x) 
+
+                return x
+
+    def angle_from_direction(self): 
+        match self.direction: 
+            case 'NORTH': 
+                angle =  0
+            case 'NORTH_EAST': 
+                angle = 45
+            case 'EAST':
+                angle =  90
+            case 'SOUTH_EAST':
+                angle = 135
+            case 'SOUTH':
+                angle = 180
+            case 'SOUTH_WEST':
+                angle = 225
+            case 'WEST':
+                angle = 270
+            case 'NORTH_WEST':
+                angle = 315
+            case _:
+                angle = 0
+            
+        return angle
+
+            
 
     def angle_btwn(self, other): 
         match other: 
@@ -48,6 +89,13 @@ class Frame():
                 return np.abs(self.heading - other.heading) 
             case float(): 
                 return np.abs(self.heading - other)
+
+    def angle_btwn_direction(self, other):
+        match other: 
+            case Frame():
+                return np.abs(self.angle_from_direction() - other.angle_from_direction())
+            case float(): 
+                return np.abs(self.angle_from_direction() - other)
         
 
 
@@ -60,13 +108,15 @@ class Frame():
         # if difference is within view cone, pass 
         # else, fail
 
-        if self.angle_btwn(angle) > VIEW_CONE:
+        if self.angle_btwn_direction(angle) > VIEW_CONE:
+            self.log.info(f"Angle between frame and coordinates is {self.angle_btwn_direction(angle)}, > {VIEW_CONE}")
             return False
 
         # now, compute distance between self and coordinates
         # if distance is within view distance, pass
         # else, fail
         if self.distance(coordinates) > VIEW_DISTANCE:
+            self.log.info(f"Distance between frame and coordinates is {self.distance(coordinates)}, > {VIEW_DISTANCE}")
             return False
         
         return True 
