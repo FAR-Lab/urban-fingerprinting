@@ -26,3 +26,20 @@ TOP_LEVEL_DIR = "/share/ju/nexar_data/2023"
 # Perspective Settings 
 VIEW_DISTANCE = 100 # feet
 VIEW_CONE = 90 # degrees (on each side from center of perspective)
+
+# 311 Fields 
+ID_COL_311 = 'Unique Key'
+LONGITUDE_COL_311 = 'Longitude'
+LATITUDE_COL_311 = 'Latitude'
+
+XSTREET_1_311 = 'Cross Street 1'
+XSTREET_2_311 = 'Cross Street 2'
+
+AGENCY_311 = 'Agency'
+AGENCY_NAME_311 = 'Agency Name'
+
+START_DATE_311 = 'Created Date'
+END_DATE_311 = 'Closed Date'
+
+DESC_COL_311 = 'Descriptor'
+TYPE_COL_311 = 'Complaint Type'

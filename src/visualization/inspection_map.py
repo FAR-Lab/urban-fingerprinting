@@ -9,7 +9,7 @@ import sys
 import os
 
 sys.path.append(os.path.abspath(os.path.join("../..", "src")))
-from src.processing.geometricUtils import Frame, Perspective
+from src.processing.geometric_utils import Frame, Perspective
 from user.params.data import *
 
 import pandas as pd

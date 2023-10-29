@@ -48,20 +48,13 @@ class Frame:
                 pass
 
             case (float(), float()):
-                lng = other[0]
-                lat = other[1]
+                x1 = self.lng
+                y1 = self.lat
+                x2 = other[0]
+                y2 = other[1]
 
-                delta_lon = lng - self.lng
-
-                x = math.atan2(
-                    math.sin(delta_lon) * math.cos(lat),
-                    math.cos(self.lat) * math.sin(lat)
-                    - math.sin(self.lat) * math.cos(lat) * math.cos(delta_lon),
-                )
-
-                x = math.degrees(x)
-
-                return x
+                return math.degrees(math.atan2(-(y2-y1), x2-x1))
+                
 
     def angle_from_direction(self):
         match self.direction:
@@ -100,7 +93,7 @@ class Frame:
                     self.angle_from_direction() - other.angle_from_direction()
                 )
             case float():
-                return np.abs(self.angle_from_direction() - other)
+                return np.abs(self.angle_from_direction() - other) % 360
 
     def depicts_coordinates(self, coordinates: tuple):
         # compute angle between self and coordinates
