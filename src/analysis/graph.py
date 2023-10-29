@@ -116,7 +116,7 @@ class G:
 
     def __init__(self, proj_path, graphml_input):
         self.DEBUG_MODE = False
-        self.WRITE_MODE = False
+        self.WRITE_MODE = True
         self.log = logging.getLogger(__name__)
         self.log.info(f"Loading graph at path {graphml_input}")
         self.PROJ_PATH = proj_path

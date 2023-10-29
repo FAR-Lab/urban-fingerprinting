@@ -33,6 +33,7 @@ class ImagePull:
         self.proj_path = proj_path
         self.DoC = DoC
         self.csvs = glob(os.path.join(self.proj_path, self.DoC, "*", "*.csv"))
+        self.pull_from_all_when_no_coords = False
 
         # hex should be in parent directory of csv file
         # filter csvs list to only include csv files with a parent directory that is a valid h3 hexagon
@@ -80,7 +81,7 @@ class ImagePull:
     ):
         self.N = N
         # Prepend 'output' to output_dir
-        output_dir = os.path.join("output", output_dir)
+        #output_dir = os.path.join("output", str(output_dir))
         # Add number of images to output_dir
         output_dir = f"{output_dir}_{self.N}"
         # Add DoC to output_dir
@@ -168,8 +169,17 @@ class ImagePull:
                 ]
 
         else:
-            self.log.info("No coords provided, using all images in image_list")
-            close_images = self.image_list
+            if self.pull_from_all_when_no_coords:
+                self.log.info(
+                    "No coords provided, using all images in image_list"
+                )
+                close_images = self.image_list
+            else:
+                self.log.error(
+                    "No coords provided, and pull_from_all_when_no_coords is False, exiting..."
+                )
+                return
+           
 
         # Randomly sample N images from image_list
         if len(close_images.index) > self.N:
@@ -199,8 +209,13 @@ class ImagePull:
                 dropped_files += 1
 
             # snew_img_name = f"{os.path.splitext(os.path.basename(img_path))[0]}
-
-            os.system(f"cp {img_path} '{output_dir}'")
+            try:
+                os.symlink(img_path, os.path.join(output_dir, image))
+            except FileExistsError:
+                self.log.warning(
+                    f"Image {image} already exists in {output_dir}"
+                )
+                continue
 
         self.log.info(f"Successfully copied {self.N} images to {output_dir}")
         if dropped_files > 0:
