@@ -1,22 +1,24 @@
 # FARLAB -- UrbanECG Project
-# Dev: Matt Franchi, help from GitHub Copilot 
-# Last Edited: 09/14/2023 
+# Dev: Matt Franchi, help from GitHub Copilot
+# Last Edited: 09/14/2023
 
-# This script is used to pull the graph of New York City from OpenStreetMap -- should update with time. 
+# This script is used to pull the graph of New York City from OpenStreetMap -- should update with time.
 
-# Imports 
-import osmnx as ox 
-import logging 
+# Imports
+import osmnx as ox
+import logging
 import os
 
 
-def pull_nyc_graph(): 
+def pull_nyc_graph():
     """
-    Pull the graph of New York City from OpenStreetMap. 
+    Pull the graph of New York City from OpenStreetMap.
     """
     # Get the graph of New York City
     logging.info("Pulling graph of NYC from OSM.")
-    G = ox.graph_from_place("New York City, New York, USA", network_type="drive")
+    G = ox.graph_from_place(
+        "New York City, New York, USA", network_type="drive"
+    )
     logging.info("Graph of NYC pulled from OSM.")
 
     # Project graph to EPSG:2263
@@ -31,6 +33,7 @@ def pull_nyc_graph():
     ox.save_graphml(G, filepath="../../data/geo/nyc.graphml")
     # Print message
     logging.info("Updated graph of NYC saved to disk.")
+
 
 if __name__ == "__main__":
     # Set logging level

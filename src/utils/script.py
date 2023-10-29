@@ -1,7 +1,4 @@
-
-
-
-# Function to count all files in directory 
+# Function to count all files in directory
 def count_files_in_dir(directory):
     # Check if directory exists
     if not os.path.exists(directory):
@@ -16,6 +13,3 @@ def count_files_in_dir(directory):
 
     # Return length of files list
     return len(files)
-
-
-

@@ -1,16 +1,16 @@
 # FARLAB -- UrbanECG Project
-# Dev: Matt Franchi, help from GitHub Copilot 
-# Last Edited: 09/14/2023 
+# Dev: Matt Franchi, help from GitHub Copilot
+# Last Edited: 09/14/2023
 
-# This script is used to generate a CSV of metadata and frame counts per day of coverage in the Nexar dashcam image dataset. 
+# This script is used to generate a CSV of metadata and frame counts per day of coverage in the Nexar dashcam image dataset.
 
-import glob 
+import glob
 import os
 from concurrent.futures import ProcessPoolExecutor
-import logging 
-import csv 
+import logging
+import csv
 import datetime
-import fire 
+import fire
 
 # Set up logging
 logging.basicConfig(level=logging.INFO)
@@ -27,10 +27,10 @@ if NUM_CORES is None:
 
 
 def get_frame_counts_worker(folder):
-    """Get frame counts for all videos in a given folder. 
+    """Get frame counts for all videos in a given folder.
 
     Args:
-        folder (str): Path to directory containing videos. 
+        folder (str): Path to directory containing videos.
 
     Returns:
         dict: Integer of frame (image) counts in the folder
@@ -43,8 +43,8 @@ def get_frame_counts_worker(folder):
     # Check if folder is a directory
     if not os.path.isdir(folder):
         raise ValueError(f"Folder {folder} is not a directory.")
-    
-    # Glob 'folder' for all .jpg files 
+
+    # Glob 'folder' for all .jpg files
     files = glob.glob(os.path.join(folder, "*/*.jpg"))
 
     # Return length of files list
@@ -52,7 +52,6 @@ def get_frame_counts_worker(folder):
 
 
 def get_md_counts_worker(md_csv):
-
     # If md_csv is None, return 0
     if md_csv is None:
         return 0
@@ -60,7 +59,7 @@ def get_md_counts_worker(md_csv):
     # Check if md_csv exists
     if not os.path.exists(md_csv):
         logger.warning(f"Metadata CSV: {md_csv} does not exist.")
-    
+
     # Open md_csv as a file object
     with open(md_csv, "r") as f:
         reader = csv.reader(f)
@@ -68,19 +67,18 @@ def get_md_counts_worker(md_csv):
         next(reader)
         # Count number of rows
         num_rows = sum(1 for row in reader)
-    
+
     # close file object
     f.close()
-
 
     # Return number of rows
     return num_rows
 
-   
+
 def get_data_counts(day_of_coverage, num_workers=8):
-    # Glob all h3-6 hexagon directories within the given day of coverage 
+    # Glob all h3-6 hexagon directories within the given day of coverage
     hex_dirs = glob.glob(os.path.join(day_of_coverage, "*"))
-    # remove any non-directories 
+    # remove any non-directories
     hex_dirs = [x for x in hex_dirs if os.path.isdir(x)]
 
     logger.info(f"Number of hex_dirs: {len(hex_dirs)}")
@@ -102,32 +100,29 @@ def get_data_counts(day_of_coverage, num_workers=8):
                 raise ValueError("More than one CSV in hex_dir.")
             # check if there is no csv
             elif len(csvs) == 0:
-                # log warning 
+                # log warning
                 logger.warning(f"No CSV in hex_dir: {hex_dir}")
                 # set hex_dirs_md[i] to None
                 hex_dirs_md[i] = None
             else:
-                # grab path of first csv 
+                # grab path of first csv
                 hex_dirs_md[i] = csvs[0]
 
         # Map get_md_counts_worker to all hex_dirs_md
         md_counts = executor.map(get_md_counts_worker, hex_dirs_md)
 
     # Return a dictionary of totals
-    return {
-        "total_frames": sum(frame_counts),
-        "total_md": sum(md_counts)
-    }
+    return {"total_frames": sum(frame_counts), "total_md": sum(md_counts)}
 
 
-# Function to create date range in specific format 
+# Function to create date range in specific format
 def daterange(start_date, end_date, format="%Y-%m-%d"):
-    """Create a date range in a specific format. 
+    """Create a date range in a specific format.
 
     Args:
         start_date (str): Start date in format YYYY-MM-DD
         end_date (str): End date in format YYYY-MM-DD
-        format (str): Format to return dates in. 
+        format (str): Format to return dates in.
 
     Yields:
         str: Date in format (default YYYY-MM-DD)
@@ -145,7 +140,7 @@ def daterange(start_date, end_date, format="%Y-%m-%d"):
 
 # Function to get data counts for a given date range
 def get_data_counts_in_range(root, start_date, end_date, num_workers=8):
-    """Get data counts for a given date range. 
+    """Get data counts for a given date range.
 
     Args:
         start_date (str): Start date in format YYYY-MM-DD
@@ -163,21 +158,23 @@ def get_data_counts_in_range(root, start_date, end_date, num_workers=8):
         # Create path to day of coverage
         day_of_coverage = os.path.join(root, date)
         # Get data counts for date
-        data_counts[date] = get_data_counts(day_of_coverage, num_workers=num_workers)
+        data_counts[date] = get_data_counts(
+            day_of_coverage, num_workers=num_workers
+        )
         # Log date and data counts
         logger.info(f"Date: {date}, Data Counts: {data_counts[date]}")
-    
+
     # Return data_counts
     return data_counts
 
 
 # Function to turn data_counts into a CSV
 def data_counts_to_csv(data_counts, csv_path):
-    """Turn data counts into a CSV. 
+    """Turn data counts into a CSV.
 
     Args:
         data_counts (dict): Dictionary of data counts.
-        csv_path (str): Path to save CSV to. 
+        csv_path (str): Path to save CSV to.
     """
     # Open csv_path as a file object
     with open(csv_path, "w") as f:
@@ -194,7 +191,7 @@ def data_counts_to_csv(data_counts, csv_path):
 
 
 if __name__ == "__main__":
-    # log number of cores, and start message 
+    # log number of cores, and start message
     logger.info("Starting frame count script...")
     logger.info(f"Number of cores: {NUM_CORES}")
 
@@ -219,10 +216,3 @@ if __name__ == "__main__":
         logger.info("Data counts not saved to CSV.")
     # log end message
     logger.info("Frame count script complete.")
-
-
-    
-
-   
-
-

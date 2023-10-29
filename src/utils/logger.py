@@ -1,22 +1,27 @@
-import logging 
+import logging
 from termcolor import colored
 
 from functools import partial, partialmethod
 
+
 class ColorfulFormatter(logging.Formatter):
     COLORS = {
-        'DEBUG': {'color': 'black', 'attrs': []},
-        'INFO': {'color': 'blue', 'attrs': []},
-        'WARNING': {'color': 'yellow', 'attrs': []},
-        'ERROR': {'color': 'red', 'attrs': []},
-        'CRITICAL': {'color': 'red', 'attrs': []},
-        'SUCCESS': {'color': 'green', 'attrs': []},
+        "DEBUG": {"color": "black", "attrs": []},
+        "INFO": {"color": "blue", "attrs": []},
+        "WARNING": {"color": "yellow", "attrs": []},
+        "ERROR": {"color": "red", "attrs": []},
+        "CRITICAL": {"color": "red", "attrs": []},
+        "SUCCESS": {"color": "green", "attrs": []},
     }
 
     def format(self, record):
         log_level = record.levelname
         msg = super().format(record)
-        return colored(msg, self.COLORS.get(log_level)['color'], attrs=self.COLORS.get(log_level)['attrs'])
+        return colored(
+            msg,
+            self.COLORS.get(log_level)["color"],
+            attrs=self.COLORS.get(log_level)["attrs"],
+        )
 
 
 def add_logging_level(level_name, level_num, method_name=None):
@@ -49,13 +54,13 @@ def add_logging_level(level_name, level_num, method_name=None):
         method_name = level_name.lower()
 
     if hasattr(logging, level_name):
-        raise AttributeError(f'{level_name} already defined in logging module')
+        raise AttributeError(f"{level_name} already defined in logging module")
     if hasattr(logging, method_name):
         raise AttributeError(
-            f'{method_name} already defined in logging module'
+            f"{method_name} already defined in logging module"
         )
     if hasattr(logging.getLoggerClass(), method_name):
-        raise AttributeError(f'{method_name} already defined in logger class')
+        raise AttributeError(f"{method_name} already defined in logger class")
 
     # This method was inspired by the answers to Stack Overflow post
     # http://stackoverflow.com/q/2183233/2988730, especially
@@ -64,10 +69,12 @@ def add_logging_level(level_name, level_num, method_name=None):
     logging.addLevelName(level_num, level_name)
     setattr(logging, level_name, level_num)
     setattr(
-        logging.getLoggerClass(), method_name,
-        partialmethod(logging.getLoggerClass().log, level_num)
+        logging.getLoggerClass(),
+        method_name,
+        partialmethod(logging.getLoggerClass().log, level_num),
     )
     setattr(logging, method_name, partial(logging.log, level_num))
+
 
 def setup_logger(name=__name__):
     logger = logging.getLogger(name)
@@ -75,10 +82,10 @@ def setup_logger(name=__name__):
 
     if logger.hasHandlers():
         logger.handlers.clear()
-        
+
     try:
-        add_logging_level('SUCCESS', 25)
-    except AttributeError as e: 
+        add_logging_level("SUCCESS", 25)
+    except AttributeError as e:
         logger.info(e)
 
     # Create console handler
@@ -86,17 +93,11 @@ def setup_logger(name=__name__):
     ch.setLevel(logging.DEBUG)
 
     # Create formatter and add it to the handlers
-    format_str = '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-    formatter = ColorfulFormatter(format_str, datefmt='%Y-%m-%d %H:%M:%S')
+    format_str = "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+    formatter = ColorfulFormatter(format_str, datefmt="%Y-%m-%d %H:%M:%S")
     ch.setFormatter(formatter)
 
     # Add the handlers to the logger
     logger.addHandler(ch)
-    
 
     return logger
-
-
-
-
-

@@ -1,10 +1,10 @@
 class DayOfCoverage:
     """
-    A class to represent a day of coverage from the Nexar dataset. 
+    A class to represent a day of coverage from the Nexar dataset.
 
     ...
 
-    Attributes 
+    Attributes
     ----------
     date : str
         The date of the day of coverage, in the format YYYY-MM-DD
@@ -14,13 +14,16 @@ class DayOfCoverage:
         A pandas dataframe containing the nearest edges to each frame in frames_data.
     nearest_edges_dist : pd.DataFrame
         A pandas dataframe containing the distance to the nearest edge for each frame in frames_data.
-    
+
     Methods
     -------
     None
     """
-    def __init__(self, day_of_coverage, frames_data = [], nearest_edges= [], detections = []):
-        self.date = day_of_coverage 
+
+    def __init__(
+        self, day_of_coverage, frames_data=[], nearest_edges=[], detections=[]
+    ):
+        self.date = day_of_coverage
         self.frames_data = frames_data
         self.nearest_edges = nearest_edges
         self.detections = detections
