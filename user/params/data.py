@@ -22,6 +22,7 @@ TZ = 'America/New_York'
 IMG_ID = 'frame_id'
 
 TOP_LEVEL_DIR = "/share/ju/nexar_data/2023"
+NYC_311_DATA_CSV_PATH = "/share/ju/urbanECG/data/geo/311_Service_Requests_from_2010_to_Present.csv"
 
 # Perspective Settings 
 VIEW_DISTANCE = 100 # feet

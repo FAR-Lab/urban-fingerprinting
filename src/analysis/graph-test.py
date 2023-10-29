@@ -61,7 +61,7 @@ GRAPHML_DIR = "/share/ju/urbanECG/data/geo/nyc.graphml"
 SUBSET_FLAG = False
 
 if __name__ == "__main__":
-    DoCs = oct_DoCs if not SUBSET_FLAG else oct_DoCs[0:1]
+    DoCs = ["2023-09-29"]
 
     graph = G(FRAMES_DIR, GRAPHML_DIR)
     graph.toggle_latex_font()

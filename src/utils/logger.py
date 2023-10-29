@@ -77,8 +77,9 @@ def add_logging_level(level_name, level_num, method_name=None):
 
 
 def setup_logger(name=__name__):
+    logging.getLogger().setLevel(logging.CRITICAL)
     logger = logging.getLogger(name)
-    logger.setLevel(logging.DEBUG)
+    logger.setLevel(logging.INFO)
 
     if logger.hasHandlers():
         logger.handlers.clear()
@@ -86,7 +87,7 @@ def setup_logger(name=__name__):
     try:
         add_logging_level("SUCCESS", 25)
     except AttributeError as e:
-        logger.info(e)
+        logger.debug(e)
 
     # Create console handler
     ch = logging.StreamHandler()

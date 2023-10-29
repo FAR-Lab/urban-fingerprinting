@@ -51,12 +51,16 @@ class NYC311Sampler:
             self.log.info(
                 f"No value to filter on provided. Sampling {n} complaints from overall dataset..."
             )
+            if n == -1: 
+                n = len(self.complaints_df.index)
             return self.complaints_df.sample(n=n, random_state=seed)
         else:
             try:
                 subset = self.complaints_df[
                     self.complaints_df[col_to_sample_on] == value_to_filter_on
                 ]
+                if n == -1: 
+                    n = len(subset.index)
             except Exception as e:
                 self.log.error(
                     f"Failed to filter on {col_to_sample_on} == {value_to_filter_on}: {e}"
@@ -69,7 +73,7 @@ class NYC311Sampler:
 
             if self.write_mode:
                 subset.sample(n=n, random_state=seed).to_csv(
-                    f"../../../data/coords/{col_to_sample_on}_{value_to_filter_on}_{n}.csv",
+                    f"../../data/coords/{col_to_sample_on}_{value_to_filter_on.replace('/','-')}_{n}.csv",
                     index=False,
                 )
             else:
@@ -82,12 +86,7 @@ class NYC311Sampler:
         self.log.info(f"Sampling from all values of {col_to_sample_on}...")
         if self.write_mode:
             for value in values:
-                if n == -1:
-                    n = len(
-                        self.complaints_df[
-                            self.complaints_df[col_to_sample_on] == value
-                        ].index
-                    )
+                
                 self.log.info(
                     f"Sampling {n} complaints from {col_to_sample_on} == {value}..."
                 )
