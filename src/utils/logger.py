@@ -79,7 +79,7 @@ def add_logging_level(level_name, level_num, method_name=None):
 def setup_logger(name=__name__):
     logging.getLogger().setLevel(logging.CRITICAL)
     logger = logging.getLogger(name)
-    logger.setLevel(logging.INFO)
+    logger.setLevel(logging.CRITICAL)
 
     if logger.hasHandlers():
         logger.handlers.clear()
@@ -100,5 +100,11 @@ def setup_logger(name=__name__):
 
     # Add the handlers to the logger
     logger.addHandler(ch)
+
+    # prevent propagation of log messages to parent logger
+    logger.propagate = False
+
+    # disable root logger
+    logging.getLogger().handlers = []
 
     return logger
