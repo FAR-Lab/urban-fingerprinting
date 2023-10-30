@@ -25,6 +25,7 @@ from tqdm.contrib.concurrent import process_map
 
 import matplotlib.pyplot as plt
 import matplotlib.style as mplstyle
+import contextily as ctx
 
 mplstyle.use(["ggplot", "fast"])
 import uuid
@@ -39,7 +40,7 @@ import gc
 # Set up logging
 import logging
 
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(level=logging.CRITICAL)
 
 from shapely import wkt
 
@@ -51,10 +52,11 @@ sys.path.append(
     os.path.abspath(os.path.join(os.path.dirname(__file__), "../../.."))
 )
 
-from utils import coco_mappings as cm
-from visualization import animated_map as am
-from day_of_coverage import DayOfCoverage
-from processing.h3_utils import h3_to_polygon, crop_within_polygon
+from src.utils import coco_mappings as cm
+from src.utils.logger import setup_logger
+from src.visualization import animated_map as am
+from src.analysis.day_of_coverage import DayOfCoverage
+from src.processing.h3_utils import h3_to_polygon, crop_within_polygon
 
 from user.params.data import (
     LONGITUDE_COL,
@@ -115,10 +117,11 @@ class G:
     - plot_density_per_road_segment(DoCs, dtbounds=(datetime.datetime(1970,1,1,0,0,0), datetime.datetime(2024,1,1,0,0,0))): Plots the density of detections per road segment within a given time range.
     """
 
-    def __init__(self, proj_path, graphml_input, crop=False, crop_id=None):
+    def __init__(self, proj_path, graphml_input, crop=False, crop_id=None, write=False):
         self.DEBUG_MODE = False
-        self.WRITE_MODE = True
-        self.log = logging.getLogger(__name__)
+        self.WRITE_MODE = write
+        self.log = setup_logger("Graph")
+        self.log.setLevel(logging.INFO)
         self.log.info(f"Loading graph at path {graphml_input}")
         self.PROJ_PATH = proj_path
         self.days_of_coverage = []
@@ -130,9 +133,12 @@ class G:
         self.crop_id = crop_id
 
         if crop and crop_id is not None:
+            self.log.info(f"Cropping graph to {crop_id}")
+            self.log.info(f"Graph currently has {len(self.gdf_edges.index)} edges and {len(self.gdf_nodes.index)} nodes.")
             self.gdf_edges = crop_within_polygon(self.gdf_edges, h3_to_polygon(crop_id))
             self.gdf_nodes = crop_within_polygon(self.gdf_nodes, h3_to_polygon(crop_id))
             self.geo = ox.graph_from_gdfs(self.gdf_nodes, self.gdf_edges)
+            self.log.info(f"Graph now has {len(self.gdf_edges.index)} edges and {len(self.gdf_nodes.index)} nodes.")
 
 
         self.gc_counter = 0
@@ -345,13 +351,27 @@ class G:
                 engine="pyarrow",
                 index_col=IMG_ID,
             )
+
+            
             # return nearest edges
             self.log.info(
                 f"Loading nearest edges from output for day of coverage {day_of_coverage}."
             )
 
             if self.crop and self.crop_id is not None:
-                pass
+                # only keep nearest edges within crop_id 
+                try:
+                    
+                    self.log.info(f"Nearest edges has {len(nearest_edges.index)} rows before cropping.")
+                    nearest_edges = nearest_edges.merge(self.gdf_edges, how='left', left_on=['u','v','key'], right_index=True)
+                    
+                    nearest_edges.dropna(subset=['osmid'], inplace=True)
+                    self.log.info(f"Nearest edges has {len(nearest_edges.index)} rows after cropping.")
+
+                except KeyError as e:
+                    self.log.error(f"KeyError in nearest edges for day of coverage {day_of_coverage}: {str(e)}")
+                    return 4
+                
 
             DoC.nearest_edges = nearest_edges
             return 0
@@ -376,8 +396,18 @@ class G:
 
 
         if self.crop and self.crop_id is not None:
-            pass
-            #nearest_edges = nearest_edges[nearest_edges["u"].isin(self.gdf_edges["u"]) & nearest_edges["v"].isin(self.gdf_edges["v"])]
+            # only keep nearest edges within crop_id 
+                try:
+                    
+                    self.log.info(f"Nearest edges has {len(nearest_edges.index)} rows before cropping.")
+                    nearest_edges = nearest_edges.merge(self.gdf_edges, how='left', left_on=['u','v','key'], right_index=True)
+                    
+                    nearest_edges.dropna(subset=['osmid'], inplace=True)
+                    self.log.info(f"Nearest edges has {len(nearest_edges.index)} rows after cropping.")
+
+                except KeyError as e:
+                    self.log.error(f"KeyError in nearest edges for day of coverage {day_of_coverage}: {str(e)}")
+                    return 4
 
         DoC.nearest_edges = nearest_edges
 
@@ -590,51 +620,73 @@ class G:
 
         DoC = self.get_day_of_coverage(day_of_coverage)
         _, ax = plt.subplots(figsize=(30, 30), frameon=True)
+
         
+        
+        
+        coverage = DoC.detections.merge(DoC.nearest_edges, left_index=True, right_on=IMG_ID, how="left")
+        
+        coverage = coverage.dropna(subset=['osmid'], axis=0)
 
-        coverage = DoC.nearest_edges.merge(
-            DoC.detections, how='right', left_index=True, right_index=True
-        )
 
-        coverage.dropna(inplace=True)
+        try:
+            coverage = (
+                coverage.groupby(["u", "v"])
+                .agg({str(class_id): "mean"})
+                .reset_index()
+            )
+        except Exception as e:
+            self.log.error(f"Error grouping by nearest edge: {str(e)}")
+            return 4
 
-        coverage = (
-            coverage.groupby(["u", "v"])
-            .agg({str(class_id): "mean"})
-            .reset_index()
-        )
 
         # coverage['binned'] = pd.qcut(coverage[str(class_id)], 100, labels=False, duplicates='drop')
 
         self.gdf_edges.plot(
-            ax=ax, color="lightcoral", linewidth=0.5, alpha=0.2
+            ax=ax, color="lightcoral", linewidth=2, alpha=0.2
         )
-        self.gdf_edges.merge(coverage, on=["u", "v"], how="left").plot(
-            ax=ax,
-            column=str(class_id),
-            cmap="cividis",
-            linewidth=0.5,
-            legend=True,
-            legend_kwds={
-                "label": "Number of frames",
-                "orientation": "horizontal",
-            },
-        )
+
+        ctx.add_basemap(ax, crs=PROJ_CRS, source=ctx.providers.OpenStreetMap.Mapnik)
+
+        try:
+            self.gdf_edges.merge(coverage, on=["u", "v"], how="left").plot(
+                ax=ax,
+                column=str(class_id),
+                cmap="cividis",
+                linewidth=3,
+                legend=True,
+                legend_kwds={
+                    "label": "Number of frames",
+                    "orientation": "horizontal",
+                },
+            )
+        except Exception as e:
+            self.log.error(f"Error plotting chloropleth on {class_id}: {str(e)}")
+            return 4
 
         ax.set_axis_off()
         ax.margins(0)
-        ax.set_title(
-            f"Average Num. of {cm.coco_classes[class_id]}s for {day_of_coverage}"
-        )
-        ax.title.set_size(50)
+        try:
+            ax.set_title(
+                f"Average Num. of {cm.coco_classes[str(class_id)]}s for {day_of_coverage}"
+            )
+            ax.title.set_size(50)
+        except Exception as e:
+            self.log.error(f"Error setting title for {class_id}: {str(e)}")
+            return 4
+        
 
         rID = datetime.datetime.now().strftime("%Y-%m-%d_%H:%M:%S")
         os.makedirs(f"../../output/plots/{day_of_coverage}", exist_ok=True)
-        plt.savefig(
-            f"../../output/plots/{day_of_coverage}/{class_id}_density_{rID}.png",
-            bbox_inches="tight",
-            pad_inches=0,
-        )
+        try:
+            plt.savefig(
+                f"../../output/plots/{day_of_coverage}/{class_id}_density_{rID}.png",
+                bbox_inches="tight",
+                pad_inches=0,
+            )
+        except Exception as e: 
+            self.log.error(f"Error saving plot for {class_id}: {str(e)}")
+            return 4
         plt.close()
 
     def init_day_of_coverage(self, doc):
@@ -650,9 +702,14 @@ class G:
         self.add_day_of_coverage(doc)
         self.coverage_to_nearest_road(doc)
         self.add_detections(doc)
-
-        self.plot_coverage(doc)
-        self.plot_detections(doc, 2)
+        try:
+            self.plot_coverage(doc)
+        except Exception as e:
+            self.log.error(f"Error plotting coverage for {doc}: {str(e)}")
+        try:
+            self.plot_detections(doc, 2)
+        except Exception as e:
+            self.log.error(f"Error plotting detections for {doc}: {str(e)}")
         self.log.info(f"Added {doc} to graph.")
 
     def generate_gif(self, DoCs):
@@ -811,10 +868,6 @@ class G:
             pandas.DataFrame: a DataFrame containing the density of the given class of objects in each edge of the road network.
         """
 
-        # ("Plot_data", plot_data)
-        # print("Plot_detections", plot_detections)
-        # print("Plot_nearest_edges", plot_nearest_edges)
-
         if car_offset:
             plot_detections.loc[:, str(class_id)] = (
                 plot_detections.loc[:, str(class_id)] + 1
@@ -844,11 +897,11 @@ class G:
             return
 
         try:
-            # print(self.coco_agg_mappings(data=plot_detections))
+            
             density = density.groupby(["u", "v"]).agg(
                 self.coco_agg_mappings(data=plot_detections)
             )
-            # print("density", density)
+            
         except Exception as e:
             self.log.error(
                 f"data2density: Problem grouping density by u,v: {e}"
@@ -908,9 +961,13 @@ class G:
 
         fig, ax = plt.subplots(figsize=(40, 40), frameon=True)
 
+        
+
         self.gdf_edges.plot(
-            ax=ax, color="lightcoral", linewidth=0.5, alpha=0.2
+            ax=ax, color="lightcoral", linewidth=2, alpha=0.2
         )
+
+        ctx.add_basemap(ax, crs=PROJ_CRS, source=ctx.providers.OpenStreetMap.Mapnik)
 
         density["binned"] = pd.cut(
             density.loc[:, str(class_id)], 100, duplicates="drop"
@@ -924,7 +981,7 @@ class G:
             ax=ax,
             column="binned" if binned else str(class_id),
             cmap=cmap,
-            linewidth=2,
+            linewidth=3,
             legend=False,
         )
 
@@ -948,7 +1005,7 @@ class G:
         if tod_flag:
             try:
                 ax.set_title(
-                    f"Average Num. of {cm.coco_classes[str(class_id)]}s per road segment \n {DoCs[0]}-{DoCs[-1]} \n {b.strftime('%H:%M')}"
+                    f"Average Num. of {cm.coco_classes[str(class_id)]}s per road segment \n {DoCs[0]}-{DoCs[-1]} \n {b[0].strftime('%H:%M')}"
                 )
             except Exception as e:
                 self.log.error(
@@ -1031,7 +1088,7 @@ class G:
 
         md = md.merge(data.nearest_edges, how='left', left_on=IMG_ID, right_on=IMG_ID)
 
-        md.dropna(inplace=True)
+        md.dropna(subset=['osmid'],inplace=True)
 
         md[TIME_COL] = md[TIME_COL].dt.floor(delta)
         subsets = md.groupby([TIME_COL])
@@ -1194,7 +1251,7 @@ class G:
         nearest_edges = []
         for doc in DoCs:
             nearest_edges.append(self.get_day_of_coverage(doc).nearest_edges)
-            print(self.get_day_of_coverage(doc).nearest_edges)
+            
 
         # Concatenate nearest edges
         nearest_edges = pd.concat(nearest_edges)
@@ -1359,9 +1416,7 @@ class G:
                     (data.frames_data[TIME_COL] >= tbounds[0])
                     & (data.frames_data[TIME_COL] <= tbounds[1])
                 ]
-                # print(tbounds, plot_data[IMG_ID])
-                # print(tbounds, data.detections.index)
-                # print(tbounds, data.nearest_edges.index)
+
                 # get detections rows that correspond to frames in plot_data
 
                 plot_detections = data.detections[
@@ -1371,7 +1426,9 @@ class G:
                     data.nearest_edges.index.isin(plot_data[IMG_ID])
                 ]
 
-                if len(plot_data) != len(plot_nearest_edges):
+            
+
+                if (len(plot_data) != len(plot_nearest_edges)) and not self.crop:
                     self.log.warning(
                         f"Lengths of plot data ({len(plot_data)}) and plot nearest edges ({len(plot_nearest_edges)}) do not match for {tbounds}."
                     )
@@ -1463,7 +1520,7 @@ class G:
             )
 
         except Exception as e:
-            self.log.error(f"Error in {b}: {e}")
+            self.log.error(f"Error in plot density per road segment - {b}: {e}")
             return 4
 
     def generate_gif(
