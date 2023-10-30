@@ -16,19 +16,48 @@ from user.params.data import *
 
 import numpy as np
 import pandas as pd
-import geopandas as gpd
+
+import pyproj
+from pyproj import CRS
+from shapely.geometry import box, Point
 
 from src.utils.logger import setup_logger
 
 
 # Class Definitions
+class CRSTransformer:
+    def __init__(self, coord_crs=COORD_CRS, proj_crs=PROJ_CRS):
+        self.coord_crs = coord_crs
+        self.proj_crs = proj_crs
+
+        self.transformer = pyproj.Transformer.from_crs(
+            self.coord_crs, self.proj_crs, always_xy=True
+        )
+
+    def within_crs_bounds(self, x, y):
+        crs_bounds = self.transformer.transform_bounds(
+            *self.proj_crs.area_of_use.bounds
+        )
+        crs_bounding_box = box(*crs_bounds)
+
+        return Point(x, y).within(crs_bounding_box)
+
+
 class Frame:
+    # Class-level CRS transformer
+    crs_transformer = CRSTransformer()
+
     def __init__(self, md_row):
         self.id = md_row[IMG_ID]
         self.lng = md_row[LONGITUDE_COL]
         self.lat = md_row[LATITUDE_COL]
         self.captured_at = md_row[TIME_COL]
-        self.location = (self.lng, self.lat)
+
+        self.x, self.y = Frame.crs_transformer.transformer.transform(
+            self.lng, self.lat
+        )
+        self.location = (self.x, self.y)
+
         self.heading = md_row[ORIENTATION_COL]
         self.direction = md_row[DIRECTION_COL]
         self.log = setup_logger(name=self.id)
@@ -37,24 +66,42 @@ class Frame:
         match other:
             case Frame():
                 return np.sqrt(
-                    (self.lng - other.lng) ** 2 + (self.lat - other.lat) ** 2
+                    (self.x - other.x) ** 2 + (self.y - other.y) ** 2
                 )
             case (float(), float()):
-                return np.sqrt((self.lng - other[0]) ** 2 + (self.lat - other[1]) ** 2)
+
+                if not Frame.crs_transformer.within_crs_bounds(other[0], other[1]):
+                    self.log.warning(
+                        f"Frame {self.id} is outside of CRS bounds, projecting..."
+                    )
+                    x2, y2 = Frame.crs_transformer.transformer.transform(
+                        other[0], other[1]
+                    )
+
+                return np.sqrt(
+                    (self.x - other[0]) ** 2 + (self.y - other[1]) ** 2
+                )
 
     def angle(self, other):
         match other:
             case Frame():
-                pass
+                return math.degrees(math.atan2(-(other.y - self.y), other.x - self.x))
 
             case (float(), float()):
-                x1 = self.lng
-                y1 = self.lat
-                x2 = other[0]
-                y2 = other[1]
+                x1 = self.x
+                y1 = self.y
 
-                return math.degrees(math.atan2(-(y2-y1), x2-x1))
-                
+                if not Frame.crs_transformer.within_crs_bounds(x1, y1):
+                    self.log.warning(
+                        f"Frame {self.id} is outside of CRS bounds, projecting..."
+                    )
+                    x2, y2 = Frame.crs_transformer.transform(
+                        other[0], other[1]
+                    )
+                else:
+                    x2, y2 = other
+
+                return math.degrees(math.atan2(-(y2 - y1), x2 - x1))
 
     def angle_from_direction(self):
         match self.direction:
