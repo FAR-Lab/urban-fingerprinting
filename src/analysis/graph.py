@@ -54,6 +54,7 @@ sys.path.append(
 from utils import coco_mappings as cm
 from visualization import animated_map as am
 from day_of_coverage import DayOfCoverage
+from processing.h3_utils import h3_to_polygon, crop_within_polygon
 
 from user.params.data import (
     LONGITUDE_COL,
@@ -114,7 +115,7 @@ class G:
     - plot_density_per_road_segment(DoCs, dtbounds=(datetime.datetime(1970,1,1,0,0,0), datetime.datetime(2024,1,1,0,0,0))): Plots the density of detections per road segment within a given time range.
     """
 
-    def __init__(self, proj_path, graphml_input):
+    def __init__(self, proj_path, graphml_input, crop=False, crop_id=None):
         self.DEBUG_MODE = False
         self.WRITE_MODE = True
         self.log = logging.getLogger(__name__)
@@ -124,6 +125,15 @@ class G:
         self.geo = ox.io.load_graphml(graphml_input)
         self.gdf_nodes = ox.utils_graph.graph_to_gdfs(self.geo, edges=False)
         self.gdf_edges = ox.utils_graph.graph_to_gdfs(self.geo, nodes=False)
+
+        self.crop = crop
+        self.crop_id = crop_id
+
+        if crop and crop_id is not None:
+            self.gdf_edges = crop_within_polygon(self.gdf_edges, h3_to_polygon(crop_id))
+            self.gdf_nodes = crop_within_polygon(self.gdf_nodes, h3_to_polygon(crop_id))
+            self.geo = ox.graph_from_gdfs(self.gdf_nodes, self.gdf_edges)
+
 
         self.gc_counter = 0
 
@@ -339,6 +349,10 @@ class G:
             self.log.info(
                 f"Loading nearest edges from output for day of coverage {day_of_coverage}."
             )
+
+            if self.crop and self.crop_id is not None:
+                pass
+
             DoC.nearest_edges = nearest_edges
             return 0
 
@@ -360,9 +374,14 @@ class G:
         nearest_edges[IMG_ID] = md[IMG_ID].tolist()
         nearest_edges = nearest_edges.set_index(IMG_ID)
 
+
+        if self.crop and self.crop_id is not None:
+            pass
+            #nearest_edges = nearest_edges[nearest_edges["u"].isin(self.gdf_edges["u"]) & nearest_edges["v"].isin(self.gdf_edges["v"])]
+
         DoC.nearest_edges = nearest_edges
 
-        if self.WRITE_MODE:
+        if self.WRITE_MODE & (not self.crop):
             os.makedirs(f"../../output/df/{day_of_coverage}", exist_ok=True)
             nearest_edges.to_csv(
                 f"../../output/df/{day_of_coverage}/nearest_edges.csv"
@@ -417,21 +436,6 @@ class G:
 
             # Return rows that need to be updated
             density.update(density_neighbors)
-
-            # Increment garbage collection counter
-            # self.gc_counter += 1
-
-            # del neighbors
-            # del density_row
-            ##del existing_neighbors
-            # del neighbors_u
-            # del neighbors_v
-
-            # Conditional garbage collection every 1000 iterations
-            # if self.gc_counter % 1000 == 0:
-            #    gc.collect()
-            #    self.log.debug(f"Garbage collection performed. Counter: {self.gc_counter}")
-            #    self.gc_counter = 0  # Reset counter
 
         except KeyError as e:
             self.log.error(
@@ -586,10 +590,13 @@ class G:
 
         DoC = self.get_day_of_coverage(day_of_coverage)
         _, ax = plt.subplots(figsize=(30, 30), frameon=True)
+        
 
         coverage = DoC.nearest_edges.merge(
-            DoC.detections, left_index=True, right_index=True
+            DoC.detections, how='right', left_index=True, right_index=True
         )
+
+        coverage.dropna(inplace=True)
 
         coverage = (
             coverage.groupby(["u", "v"])
@@ -948,7 +955,7 @@ class G:
                     f"plot_density_per_road_segment: Problem setting title: {e}"
                 )
                 ax.set_title(
-                    f"Average Num. of {cm.coco_classes[str(class_id)]}s per road segment \n {DoCs[0]}-{DoCs[-1]} \n {b}"
+                    f"Average Num. of {cm.coco_classes[str(class_id)]}s per road segment \n {DoCs[0].strftime('%Y-%m-%d')}-{DoCs[-1].strftime('%Y-%m-%d')} \n {b}"
                 )
 
         else:
@@ -1022,7 +1029,9 @@ class G:
 
         md = md.merge(data.detections, left_on=IMG_ID, right_index=True)
 
-        md = md.merge(data.nearest_edges, left_on=IMG_ID, right_on=IMG_ID)
+        md = md.merge(data.nearest_edges, how='left', left_on=IMG_ID, right_on=IMG_ID)
+
+        md.dropna(inplace=True)
 
         md[TIME_COL] = md[TIME_COL].dt.floor(delta)
         subsets = md.groupby([TIME_COL])
@@ -1185,6 +1194,7 @@ class G:
         nearest_edges = []
         for doc in DoCs:
             nearest_edges.append(self.get_day_of_coverage(doc).nearest_edges)
+            print(self.get_day_of_coverage(doc).nearest_edges)
 
         # Concatenate nearest edges
         nearest_edges = pd.concat(nearest_edges)
@@ -1219,7 +1229,7 @@ class G:
 
         self.log.info(f"Stripped date from {TIME_COL} column.")
         self.log.info(
-            f"{len(md)} rows in merged metadata, with time stpread from {md[TIME_COL].min()} to {md[TIME_COL].max()}"
+            f"{len(md)} rows in merged metadata, with time spread from {md[TIME_COL].min()} to {md[TIME_COL].max()}"
         )
 
         # Sort by TIME_COL
