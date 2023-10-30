@@ -62,8 +62,10 @@ SUBSET_FLAG = False
 
 if __name__ == "__main__":
     DoCs = ["2023-09-29"]
+    #DoCs = ["2023-10-20", "2023-10-21", "2023-10-22", "2023-10-23", "2023-10-24", "2023-10-25", "2023-10-26", "2023-10-27", "2023-10-28", "2023-10-29"]
 
-    graph = G(FRAMES_DIR, GRAPHML_DIR)
+    graph = G(FRAMES_DIR, GRAPHML_DIR, crop=True, crop_id='862a10747ffffff')
+    #graph = G(FRAMES_DIR, GRAPHML_DIR)
     graph.toggle_latex_font()
     for day in DoCs:
         try:
