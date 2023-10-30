@@ -1,6 +1,6 @@
 # FARLAB -- UrbanECG Project
 # Dev: Matt Franchi, help from GitHub Copilot
-# Last Edited: 09/22/2023
+# Last Edited: 10/30/2023
 
 # Imports
 import shlex
@@ -175,7 +175,7 @@ class YOLO_Detector:
         # can fit 16 detection tasks on a single GPU
         if write_frames_lists:
             frames_dirs = glob.glob(
-                f"{self.TOP_LEVEL_DIR}/{self.DAY_OF_COVERAGE}/*/2023*/"
+                f"{self.TOP_LEVEL_DIR}/{self.DAY_OF_COVERAGE}/*/frames/"
             )
             frames_paths_list = self.write_n_frames_list(
                 frames_dirs,
