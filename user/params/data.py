@@ -26,7 +26,7 @@ NYC_311_DATA_CSV_PATH = "/share/ju/urbanECG/data/geo/311_Service_Requests_from_2
 
 # Perspective Settings 
 VIEW_DISTANCE = 100 # feet
-VIEW_CONE = 90 # degrees (on each side from center of perspective)
+VIEW_CONE = 67.35 # Nexar cameras have 170 diagonal FOV, so cone should be about 168.5/2 degrees
 
 # 311 Fields 
 ID_COL_311 = 'Unique Key'
