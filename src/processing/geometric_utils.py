@@ -95,7 +95,7 @@ class Frame:
         match other:
             case Frame():
                 angle = math.degrees(
-                    math.atan2(-(other.y - self.y), other.x - self.x)
+                    math.atan2((other.y - self.y), other.x - self.x)
                 )
                 # shift to account for true north of 0 degrees
                 angle = (angle + 360) % 360
@@ -122,10 +122,14 @@ class Frame:
                     x2, y2 = other
 
                 angle = math.degrees(
-                    math.atan2(-(y2 - y1), x2 - x1)
+                    math.atan2((y2 - y1), x2 - x1)
                 )
-                # shift to account for true north of 0 degrees
-                angle = (angle + 360) % 360
+                
+                if angle > 90: 
+                    angle = 450 - angle
+                else:
+                    angle = 90 - angle
+
                 return angle
 
     def angle_from_direction(self):
@@ -178,10 +182,10 @@ class Frame:
         # if difference is within view cone, pass
         # else, fail
         
-        if self.angle_btwn_direction(angle) > VIEW_CONE:
+        if self.angle_btwn(angle) > VIEW_CONE:
             #print(self.angle_btwn_direction(angle))
             self.log.info(
-                f"Angle between frame and coordinates is {self.angle_btwn_direction(angle)}, > {VIEW_CONE}"
+                f"Angle between frame and coordinates is {self.angle_btwn(angle)}, > {VIEW_CONE}"
             )
             return False
 
