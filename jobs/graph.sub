@@ -16,6 +16,6 @@ source /home/mwf62/.bashrc
  
 source activate /share/ju/conda_virtualenvs/urbanekg
 
-cd /share/ju/urbanECG/src/analysis
+cd /share/ju/urbanECG/drivers/analysis
 
-python graph-test.py
+python graph.py

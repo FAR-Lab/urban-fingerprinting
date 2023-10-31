@@ -967,7 +967,9 @@ class G:
             ax=ax, color="lightcoral", linewidth=2, alpha=0.2
         )
 
-        ctx.add_basemap(ax, crs=PROJ_CRS, source=ctx.providers.OpenStreetMap.Mapnik)
+        
+        
+        
 
         density["binned"] = pd.cut(
             density.loc[:, str(class_id)], 100, duplicates="drop"
@@ -1001,6 +1003,8 @@ class G:
 
         ax.set_axis_off()
         ax.margins(0)
+
+        ctx.add_basemap(ax, crs=PROJ_CRS, source=ctx.providers.OpenStreetMap.Mapnik)
 
         if tod_flag:
             try:

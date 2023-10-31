@@ -11,7 +11,7 @@ import sys
 sys.path.append(os.path.abspath(os.path.join("../..", "src")))
 
 from src.processing.geometric_utils import Frame, Perspective
-
+from src.utils.logger import setup_logger
 from glob import glob
 import random
 import logging
@@ -27,8 +27,8 @@ from tqdm.contrib.concurrent import process_map
 
 class ImagePull:
     def __init__(self, proj_path, DoC):
-        self.log = logging.getLogger(__name__)
-        logging.basicConfig(level=logging.INFO)
+        self.log = setup_logger("ImagePull")
+        self.log.setLevel(logging.DEBUG)
         self.N = 1000
         self.proj_path = proj_path
         self.DoC = DoC
@@ -139,6 +139,7 @@ class ImagePull:
             close_images = close_images[close_images["distance"] <= proximity]
 
             # out of these images, only keep those that actually depict the coordinates
+            self.log.info(f"{len(close_images.index)} images within proximity")
             close_images = close_images[
                 close_images.apply(
                     lambda x: Frame(x).depicts_coordinates(
@@ -147,6 +148,7 @@ class ImagePull:
                     axis=1,
                 )
             ]
+            self.log.info("Filtered out images that do not depict coords, now have {} images".format(len(close_images.index)))
 
             if time_delta > 0:
                 self.log.info(
@@ -194,6 +196,7 @@ class ImagePull:
         dropped_files = 0
         # Copy sampled images to output_dir
         # for image in process_map(lambda x: f"{x}.jpg", sample['frame_id'], desc=f"Copying images to {output_dir}"):
+        sample.to_csv(os.path.join(output_dir, "metadata.csv"), index=False)
         for image in tqdm(
             sample["frame_id"].apply(lambda x: f"{x}.jpg"),
             desc=f"Copying images to {output_dir}",

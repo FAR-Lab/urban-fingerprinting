@@ -11,6 +11,7 @@ import os
 sys.path.append(os.path.abspath(os.path.join("../..", "src")))
 from src.processing.geometric_utils import Frame, Perspective
 from user.params.data import *
+from src.utils.logger import setup_logger
 
 import pandas as pd
 import folium
@@ -18,17 +19,21 @@ import numpy as np
 import imageio
 import cv2
 import base64
+import logging
 
 from datetime import datetime
 
 
 class InspectionMap:
     def __init__(self, center):
+        self.log = setup_logger("InspectionMap")
+        self.log.setLevel(logging.DEBUG)
         self.map = folium.Map(
             location=center, zoom_start=14, control_scale=True
         )
         self.frames_group = folium.FeatureGroup(name="Nexar Frames")
         self.complaints_groups = {}
+        self.debug = True
 
     def init_complaint_group(self, name):
         try:
@@ -70,60 +75,120 @@ class InspectionMap:
                     cv2.imencode(".jpg", img)[1]
                 ).decode("utf-8")
 
-                popup_html = f"""
-                <div style="width: 640px; height: 420px; overflow: hidden;">
-                    <div id="frame-info">
-                        <p><b>Frame ID:</b> {frame[IMG_ID]}, Capture Time: {datetime.fromtimestamp(int(frame[TIME_COL] / 1000))}</p>
-                        <p>Location: {frame[LATITUDE_COL]}, {frame[LONGITUDE_COL]}, Heading: {frame[DIRECTION_COL]}</p>
-                    </div>
-                    <img src="data:image/png;base64,{encoded}" width="640" height="360">
-                    
-                </div>"""
+                debug_div = ""
+                try:
+                    if self.debug:
+                        test = Frame(frame)
+                        test_angle = test.angle((frame[LONGITUDE_COL_311], frame[LATITUDE_COL_311]))
+                        test_angle_btwn = test.angle_btwn(test_angle)
+                        test_distance = test.distance((frame[LONGITUDE_COL_311], frame[LATITUDE_COL_311]))
 
-                self.frames_group.add_child(
-                    folium.Marker(
-                        location=[frame[LATITUDE_COL], frame[LONGITUDE_COL]],
-                        popup=folium.Popup(popup_html, max_width=640),
-                        icon=folium.Icon(
-                            color="green", icon="camera", prefix="fa"
-                        ),
+                        debug_div = f"""
+                        <div id="debug-info">
+                            <h3>Debug Info</h3>
+                            <table>
+                                <tr>
+                                    <td><b>Relevant 311 ID</b>: {frame['Unique Key']}<td>
+                                    <td><b> Angle between Points:</b> {test_angle}</td>
+                                </tr>
+                                <tr>
+                                    <td><b> Angle Between Headings:</b> {test_angle_btwn}</td>
+                                    <td><b> Distance to Complaint:</b> {test_distance}</td>
+                                </tr>
+                            </table>
+                        </div>"""
+                except Exception as e:
+                    self.log.error(f"Failed to generate debug div: {e}")
+
+                try:
+                    popup_html = f"""
+                    <div style="width: 640px; height: 720px; overflow: hidden;">
+                        <div id="frame-info">
+                            <h3>Frame Info</h3>
+                            <p><b>Frame ID:</b> {frame[IMG_ID]}, Capture Time: {frame[TIME_COL]}</p>
+                            <p>Location: {frame[LATITUDE_COL]}, {frame[LONGITUDE_COL]}, Heading: {frame[DIRECTION_COL]}, Angle: {frame[ORIENTATION_COL]}</p>
+                            <p>Projected: {frame.geometry.x}, {frame.geometry.y}</p>
+                        </div>
+                        {debug_div}
+                        <img src="data:image/png;base64,{encoded}" width="640" height="360">
+                        
+                    </div>"""
+                except Exception as e:
+                    self.log.error(
+                        f"Failed to generate popup HTML for frame {frame[IMG_ID]}: {e}"
                     )
-                )
+                    return
+
+                
+
+                try:
+                    self.frames_group.add_child(
+                        folium.Marker(
+                            location=[frame[LATITUDE_COL], frame[LONGITUDE_COL]],
+                            popup=folium.Popup(popup_html, max_width=640),
+                            icon=folium.Icon(
+                                color="green", icon="camera", prefix="fa"
+                            ),
+                        )
+                    )
+                except Exception as e:
+                    self.log.error(
+                        f"Failed to add frame marker for frame {frame[IMG_ID]}: {e}"
+                    )
+                    return
+
+                self.log.success(f"Added frame {frame[IMG_ID]} to map")
         except Exception as e:
-            print(f"Failed to add frame marker for frame {frame[IMG_ID]}: {e}")
+            self.log.error(
+                f"Failed to add frame marker for frame {frame[IMG_ID]}: {e}"
+            )
+            return
+
 
     def add_311_marker(self, complaint):
-        popup_html = f"""
-            <div style="width: 640px; height: 420px; overflow: hidden;">
-                <div id="311_info">
-                <table>
-                    <tr>
-                        <td><b>Complaint ID:</b></td>
-                        <td>{complaint[ID_COL_311]}</td>
-                        <td><b>Agency:</b></td>
-                        <td>{complaint[AGENCY_NAME_311]}</td>
-                    </tr>
-                    <tr>
-                        <td><b>Created:</b></td>
-                        <td>{complaint[START_DATE_311]}</td>
-                        <td><b>Closed:</b></td>
-                        <td>{complaint[END_DATE_311]}</td>
-                    </tr>
-                    <tr>
-                        <td><b>Location:</b></td>
-                        <td>{complaint[LONGITUDE_COL_311]}, {complaint[LATITUDE_COL_311]}</td>
-                        <td><b>Cross Streets:</b></td>
-                        <td>{complaint[XSTREET_1_311]}, {complaint[XSTREET_2_311]}</td>
-                    </tr>
-                    <tr>
-                        <td><b>Complaint Type:</b></td>
-                        <td>{complaint[TYPE_COL_311]}</td>
-                        <td><b>Descriptor:</b></td>
-                        <td>{complaint[DESC_COL_311]}</td>
-                    </tr>
-                </table>
-                </div>
-            </div>"""
+        try:
+            popup_html = f"""
+                <div style="width: 640px; height: 420px; overflow: hidden;">
+                    <div id="311_info">
+                    <table>
+                        <tr>
+                            <td><b>Complaint ID:</b></td>
+                            <td>{complaint[ID_COL_311]}</td>
+                            <td><b>Agency:</b></td>
+                            <td>{complaint[AGENCY_NAME_311]}</td>
+                        </tr>
+                        <tr>
+                            <td><b>Created:</b></td>
+                            <td>{complaint[START_DATE_311]}</td>
+                            <td><b>Closed:</b></td>
+                            <td>{complaint[END_DATE_311]}</td>
+                        </tr>
+                        <tr>
+                            <td><b>Location:</b></td>
+                            <td>{complaint[LONGITUDE_COL_311]}, {complaint[LATITUDE_COL_311]}</td>
+                            <td><b>Cross Streets:</b></td>
+                            <td>{complaint[XSTREET_1_311]}, {complaint[XSTREET_2_311]}</td>
+                        </tr>
+                        <tr>
+                            <td><b>Complaint Type:</b></td>
+                            <td>{complaint[TYPE_COL_311]}</td>
+                            <td><b>Descriptor:</b></td>
+                            <td>{complaint[DESC_COL_311]}</td>
+                        </tr>
+                        <tr>
+                            <td>Projected X:</td>
+                            <td>{complaint.geometry.x}</td>
+                            <td>Projected Y:</td>
+                            <td>{complaint.geometry.y}</td>
+                        </tr>
+                    </table>
+                    </div>
+                </div>"""
+        except Exception as e:
+            self.log.error(
+                f"Failed to generate popup HTML for complaint {complaint[ID_COL_311]}: {e}"
+            )
+            return
 
         icon_colors = {
             "Sewer Backup (Use Comments) (SA)": "red",
