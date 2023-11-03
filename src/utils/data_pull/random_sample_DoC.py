@@ -85,7 +85,7 @@ class ImagePull:
         # Add number of images to output_dir
         output_dir = f"{output_dir}_{self.N}"
         # Add DoC to output_dir
-        output_dir = f"{output_dir}_{self.DoC}"
+        #output_dir = f"{output_dir}_{self.DoC}"
 
         # Make output dir, exists_ok=True
         os.makedirs(output_dir, exist_ok=True)
@@ -158,12 +158,16 @@ class ImagePull:
                 close_images["captured_at"] = pd.to_datetime(
                     close_images["captured_at"], unit="ms"
                 )
+
+                close_images['captured_at'] = close_images['captured_at'].dt.tz_localize('UTC').dt.tz_convert('America/New_York')
+
                 close_images["Created Date"] = pd.to_datetime(
                     close_images["Created Date"]
                 )
+                close_images['Created Date'] = close_images['Created Date'].dt.tz_localize('UTC').dt.tz_convert('America/New_York')
 
                 close_images["time_diff"] = (
-                    close_images["captured_at"] - close_images["Created Date"]
+                    abs(close_images["captured_at"] - close_images["Created Date"])
                 )
                 close_images = close_images[
                     close_images["time_diff"]
@@ -182,6 +186,9 @@ class ImagePull:
                 )
                 return
            
+        if len(close_images.index) == 0:
+            self.log.error("No images found within proximity of coords, exiting...")
+            return
 
         # Randomly sample N images from image_list
         if len(close_images.index) > self.N:
@@ -197,28 +204,36 @@ class ImagePull:
         # Copy sampled images to output_dir
         # for image in process_map(lambda x: f"{x}.jpg", sample['frame_id'], desc=f"Copying images to {output_dir}"):
         sample.to_csv(os.path.join(output_dir, "metadata.csv"), index=False)
-        for image in tqdm(
-            sample["frame_id"].apply(lambda x: f"{x}.jpg"),
+        sample['path'] = sample['frame_id'].apply(lambda x: f"{x}.jpg")
+        for idx, image in tqdm(
+            sample.iterrows(),
             desc=f"Copying images to {output_dir}",
         ):
             try:
                 img_path = glob(
-                    os.path.join(self.proj_path, self.DoC, "*", "*", image)
+                    os.path.join(self.proj_path, self.DoC, "*", "*", image["path"])
                 )[0]
             except IndexError:
                 self.log.warning(
-                    f"Could not find image {image} in {self.proj_path}/{self.DoC}"
+                    f"Could not find image {image['path']} in {self.proj_path}/{self.DoC}"
                 )
                 dropped_files += 1
 
             # snew_img_name = f"{os.path.splitext(os.path.basename(img_path))[0]}
             try:
-                os.symlink(img_path, os.path.join(output_dir, image))
+                os.symlink(
+                    img_path,
+                    os.path.join(
+                        output_dir,
+                        f"{image['frame_id']}_{image['distance']:.3f}_{str(image['time_diff'])}_{image['Complaint Type'].replace('/','-')}_{image['Descriptor'].replace('/','-')}.jpg"
+                    )
+                )
             except FileExistsError:
                 self.log.warning(
                     f"Image {image} already exists in {output_dir}"
                 )
-                continue
+                continue 
+ 
 
         self.log.info(f"Successfully copied {self.N} images to {output_dir}")
         if dropped_files > 0:
