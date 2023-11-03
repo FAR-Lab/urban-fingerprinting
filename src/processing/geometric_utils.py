@@ -94,11 +94,28 @@ class Frame:
     def angle(self, other):
         match other:
             case Frame():
+                if not Frame.crs_transformer.within_crs_bounds(other.x, other.y):
+                    self.log.warning(
+                        f"Frame {self.id} is outside of CRS bounds, projecting..."
+                    )
+                    other.x, other.y = Frame.crs_transformer.transformer.transform(
+                        other.x, other.y
+                    )
+                else:
+                    other.x, other.y = other.x, other.y
+
                 angle = math.degrees(
                     math.atan2((other.y - self.y), other.x - self.x)
                 )
-                # shift to account for true north of 0 degrees
-                angle = (angle + 360) % 360
+
+                if angle > 90: 
+                    angle = 450 - angle
+                else:
+                    angle = 90 - angle
+
+                
+               
+                
 
 
             case (float(), float()):
