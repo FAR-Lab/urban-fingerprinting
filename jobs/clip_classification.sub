@@ -1,0 +1,22 @@
+#!/bin/bash 
+#SBATCH -J clip_classification
+#SBATCH -o /share/ju/urbanECG/log/clip_classification/%j.out 
+#SBATCH -e /share/ju/urbanECG/log/clip_classification/%j.err
+#SBATCH --mail-type=ALL 
+#SBATCH --mail-user=mwf62@cornell.edu 
+#SBATCH -N 1
+#SBATCH -n 8
+#SBATCH --get-user-env 
+#SBATCH --mem=64gb
+#SBATCH --gpus=1
+#SBATCH -t 400:00:00 
+#SBATCH --partition=pierson
+
+pwd
+source /home/mwf62/.bashrc
+ 
+source activate /share/ju/conda_virtualenvs/lavis
+
+cd /share/ju/urbanECG/drivers/cv
+
+python clip_classification.py

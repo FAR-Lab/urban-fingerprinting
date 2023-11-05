@@ -42,7 +42,7 @@ descriptors = ['Manhole Overflow (Use Comments) (SA1)', 'Catch Basin Clogged/Flo
 
 # %%
 for descriptor in descriptors:
-    nexar_pull.pull_images(1000, f"{descriptor}_w_depicts", coords=flooding[flooding['Descriptor'] == descriptor].copy(), proximity=100, time_delta=30)
+    nexar_pull.pull_images(1000, f"/share/ju/urbanECG/training_datasets/flooding", coords=flooding[flooding['Descriptor'] == descriptor].copy(), proximity=250, time_delta=120)
     
 
 # %%

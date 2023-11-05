@@ -94,40 +94,23 @@ class Frame:
     def angle(self, other):
         match other:
             case Frame():
+                x1, y1 = self.x, self.y
+
                 if not Frame.crs_transformer.within_crs_bounds(other.x, other.y):
                     self.log.warning(
                         f"Frame {self.id} is outside of CRS bounds, projecting..."
                     )
-                    other.x, other.y = Frame.crs_transformer.transformer.transform(
+                    x2, y2 = Frame.crs_transformer.transformer.transform(
                         other.x, other.y
                     )
                 else:
-                    other.x, other.y = other.x, other.y
-
-                angle = math.degrees(
-                    math.atan2((other.y - self.y), other.x - self.x)
-                )
-
-                if angle > 90: 
-                    angle = 450 - angle
-                else:
-                    angle = 90 - angle
-
-                
-               
-                
-
+                    x2, y2 = other.x, other.y
 
             case (float(), float()):
                 x1 = self.x
                 y1 = self.y
 
-                x2 = other[0]
-                y2 = other[1]
-
-                
-
-
+                x2, y2 = other
                 if not Frame.crs_transformer.within_crs_bounds(x2, y2):
                     self.log.warning(
                         f"Frame {self.id} is outside of CRS bounds, projecting..."
@@ -137,17 +120,21 @@ class Frame:
                     )
                 else:
                     x2, y2 = other
-
-                angle = math.degrees(
-                    math.atan2((y2 - y1), x2 - x1)
-                )
+            
+            case _:
+                self.log.error(f"Invalid type for other: {type(other)}")
+                raise TypeError(f"Invalid type for other: {type(other)}")
                 
-                if angle > 90: 
-                    angle = 450 - angle
-                else:
-                    angle = 90 - angle
+        angle = math.degrees(
+            math.atan2((y2 - y1), x2 - x1)
+        )
+        
+        if angle > 90: 
+            angle = 450 - angle
+        else:
+            angle = 90 - angle
 
-                return angle
+        return angle
 
     def angle_from_direction(self):
         match self.direction:

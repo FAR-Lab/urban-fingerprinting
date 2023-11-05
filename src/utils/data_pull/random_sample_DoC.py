@@ -233,6 +233,9 @@ class ImagePull:
                     f"Image {image} already exists in {output_dir}"
                 )
                 continue 
+            except Exception as e:
+                self.log.error(e)
+                continue
  
 
         self.log.info(f"Successfully copied {self.N} images to {output_dir}")

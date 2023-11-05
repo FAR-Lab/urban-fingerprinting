@@ -1,0 +1,21 @@
+#!/bin/bash 
+#SBATCH -J labelling_server
+#SBATCH -o /share/ju/urbanECG/log/labelling_server/%j.out 
+#SBATCH -e /share/ju/urbanECG/log/labelling_server/%j.err
+#SBATCH --mail-type=ALL 
+#SBATCH --mail-user=mwf62@cornell.edu 
+#SBATCH -N 1
+#SBATCH -n 4
+#SBATCH --get-user-env 
+#SBATCH --mem=32gb
+#SBATCH -t 24:00:00
+#SBATCH --partition=ju
+
+pwd
+source /home/mwf62/.bashrc
+ 
+source activate /share/ju/conda_virtualenvs/urbanekg.labelling
+
+cd /share/ju/urbanECG/src/utils/labelling/label-studio
+
+python label_studio/manage.py runserver 0.0.0.0:8916

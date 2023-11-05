@@ -4,3 +4,6 @@
 [submodule "src/cv/FastSAM"]
 	path = src/cv/FastSAM
 	url = git@github.com:CASIA-IVA-Lab/FastSAM.git
+[submodule "src/cv/LAVIS"]
+	path = src/cv/LAVIS
+	url = git@github.com:salesforce/LAVIS.git

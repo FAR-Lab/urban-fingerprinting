@@ -21,7 +21,18 @@ import geopandas as gpd
 if __name__ == '__main__': 
 
     nyc_311_complaints_subsets = glob("../../data/coords/Descriptor*.csv")
+
+
+    kwds_to_remove = ["Noise", "Talking", "Banging", "Music", "Loud", "Air", "Taste"]
+
+    for kw in kwds_to_remove:
+        nyc_311_complaints_subsets = [x for x in nyc_311_complaints_subsets if kw.lower() not in x.lower()]
+
     nyc_311_complaints_names = [x.split('_')[1] for x in nyc_311_complaints_subsets]
+
+    
+
+ 
 
     DoCs = ["2023-08-18", "2023-08-20", "2023-08-21", "2023-08-22", "2023-08-23", "2023-08-24"]
 
@@ -40,13 +51,8 @@ if __name__ == '__main__':
                 image_pull.log.error(e)
                 continue
 
-            # filter for complaints on the day of coverage
-            nyc_311_complaints['Created Date'] = pd.to_datetime(nyc_311_complaints['Created Date'])
-            #nyc_311_complaints = nyc_311_complaints[nyc_311_complaints['Created Date'].dt.date == pd.to_datetime(day).date()]
-
-
             nyc_311_complaints = gpd.GeoDataFrame(nyc_311_complaints, geometry=gpd.points_from_xy(nyc_311_complaints[LONGITUDE_COL_311], nyc_311_complaints[LATITUDE_COL_311]), crs="EPSG:4326")
             nyc_311_complaints = nyc_311_complaints.to_crs(PROJ_CRS)
 
-            image_pull.pull_images(1000,f"../../output/nyc_311_samples/{nyc_311_complaints_names[i]}", coords=nyc_311_complaints, proximity=20, time_delta=5)
+            image_pull.pull_images(1000,f"/share/ju/urbanECG/training_datasets/{nyc_311_complaints_names[i]}", coords=nyc_311_complaints, proximity=30, time_delta=15)
 
