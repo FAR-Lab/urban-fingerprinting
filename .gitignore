@@ -1,0 +1,14 @@
+output/
+src/utils/data_pull/output
+notebooks/output/
+data/
+src/cv/fastsam_weights/
+src/cv/yolov7_weights/
+src/cv/traced_model.pt
+drivers/cv/fastsam_weights/
+src/test/output/
+log/
+notebooks/*/
+training_datasets/
+user/oai_creds.py
+models/
