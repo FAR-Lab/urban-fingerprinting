@@ -102,7 +102,6 @@ class G:
     - get_frames_worker(folder): Returns a list of all .jpg files in the given folder.
     - get_md_worker(md_csv): Returns a pandas DataFrame object representing the metadata from the given CSV file.
     - get_data(day_of_coverage, num_workers): Returns a GeoDataFrame object representing the metadata for the given day of coverage.
-    - load_day_of_coverage(day_of_coverage): Returns a GeoDataFrame object representing the metadata for the given day of coverage.
     - add_day_of_coverage(day_of_coverage): Adds a DayOfCoverage object representing the given day of coverage to the graph.
     - get_day_of_coverage(day_of_coverage): Returns a DayOfCoverage object representing the given day of coverage.
     - nearest_road_worker(subset): Returns a list of the nearest edges for each row in the given subset of metadata.
@@ -161,7 +160,7 @@ class G:
         plt.rcParams["text.usetex"] = not plt.rcParams["text.usetex"]
         self.log.info(f"Latex font set to {plt.rcParams['text.usetex']}.")
 
-    def get_frames_worker(self, folder):
+    def _get_frames_worker(self, folder):
         """
         Returns a list of all .jpg files in the given folder.
         """
@@ -178,7 +177,7 @@ class G:
 
         return files
 
-    def get_md_worker(self, md_csv):
+    def _get_md_worker(self, md_csv):
         """
         Returns a pandas DataFrame object representing the metadata from the given CSV file.
         """
@@ -196,7 +195,7 @@ class G:
 
         return df
 
-    def get_data(self, day_of_coverage, num_workers=24):
+    def _get_data(self, day_of_coverage, num_workers=24):
         """
         Returns a GeoDataFrame object representing the metadata for the given day of coverage.
         """
@@ -252,7 +251,7 @@ class G:
 
         self.log.info("Loading frames and metadata...")
         frames = Parallel(n_jobs=NUM_CORES)(
-            delayed(self.get_frames_worker)(folder)
+            delayed(self._get_frames_worker)(folder)
             for folder in tqdm(hex_dirs)
         )
         frames = list(chain.from_iterable(frames))
@@ -260,7 +259,7 @@ class G:
 
         # Map get_md_counts_worker to all hex_dirs_md
         md = Parallel(n_jobs=NUM_CORES)(
-            delayed(self.get_md_worker)(md_csv) for md_csv in tqdm(hex_dirs_md)
+            delayed(self._get_md_worker)(md_csv) for md_csv in tqdm(hex_dirs_md)
         )
         md = pd.concat(md)
         self.log.info(
@@ -291,18 +290,12 @@ class G:
         # return md for day of coverage
         return md
 
-    def load_day_of_coverage(self, day_of_coverage):
-        """
-        Returns a GeoDataFrame object representing the metadata for the given day of coverage.
-        """
-        return self.get_data(day_of_coverage)
-
-    def add_day_of_coverage(self, day_of_coverage):
+    def _add_day_of_coverage(self, day_of_coverage):
         """
         Adds a DayOfCoverage object representing the given day of coverage to the graph.
         """
         DoC = DayOfCoverage(day_of_coverage)
-        DoC.frames_data = self.get_data(day_of_coverage)
+        DoC.frames_data = self._get_data(day_of_coverage)
         self.days_of_coverage.append(DoC)
         self.log.info(
             f"Added day of coverage {day_of_coverage} to graph, with {len(DoC.frames_data.index)} rows."
@@ -321,7 +314,7 @@ class G:
             )
             return 4
 
-    def nearest_road_worker(self, subset):
+    def _nearest_road_worker(self, subset):
         """
         Returns a list of the nearest edges for each row in the given subset of metadata.
         """
@@ -332,7 +325,7 @@ class G:
 
         return nearest_edges
 
-    def coverage_to_nearest_road(self, day_of_coverage):
+    def _coverage_to_nearest_road(self, day_of_coverage):
         """
         Calculates the nearest road for each frame in the given day of coverage.
         """
@@ -381,7 +374,7 @@ class G:
         md_split = np.array_split(md, 10 * NUM_CORES)
 
         nearest = Parallel(n_jobs=NUM_CORES)(
-            delayed(self.nearest_road_worker)(subset)
+            delayed(self._nearest_road_worker)(subset)
             for subset in tqdm(md_split)
         )
         nearest_edges, nearest_edges_dist = zip(*nearest)
@@ -427,7 +420,7 @@ class G:
         )
         return 0
 
-    def add_detections(self, day_of_coverage):
+    def _add_detections(self, day_of_coverage):
         """
         Adds a GeoDataFrame object representing the detections for the given day of coverage to the graph.
         """
@@ -444,7 +437,7 @@ class G:
         return 0
 
     # Starting by optimizing the gaussian_kernel function
-    def gaussian_kernel_optimized(self, row, density, precomputed_neighbors):
+    def _gaussian_kernel_optimized(self, row, density, precomputed_neighbors):
         try:
             # Retrieve u, v from row index
             u, v = row.name
@@ -475,7 +468,7 @@ class G:
             )
 
     # Modify the smoothing function to include precomputed neighbors
-    def smoothing_optimized(self, density, idx, precomputed_neighbors):
+    def smoothing(self, density, idx, precomputed_neighbors):
         if not density.empty:
             # Apply self.gaussian_kernel_optimized to each row of density
             tqdm.pandas(
@@ -485,7 +478,7 @@ class G:
                 total=len(density.index),
             )
             density.progress_apply(
-                self.gaussian_kernel_optimized,
+                self._gaussian_kernel_optimized,
                 axis=1,
                 args=(density, precomputed_neighbors),
             )
@@ -503,62 +496,6 @@ class G:
             out_neighbors = list(self.geo.out_edges(node))
             precomputed_neighbors[node] = in_neighbors + out_neighbors
         return precomputed_neighbors
-
-    def smoothing(self, density, idx):
-        # only smooth if density dataframe is not empty
-        if not density.empty:
-            # apply self.gaussian_kernel to each row of density
-            tqdm.pandas(
-                desc=f"Smoothing density for {idx}",
-                position=idx,
-                leave=True,
-                total=len(density.index),
-            )
-            density = density.progress_apply(
-                self.gaussian_kernel, axis=1, args=(density,)
-            )
-
-        return density
-
-    def gaussian_kernel(self, row, density):
-        # get u,v from row index
-        u, v = row.name
-
-        # get all neighboring edges of u
-        u_in_neighbors = list(self.geo.in_edges(u))
-        u_out_neighbors = list(self.geo.out_edges(u))
-        u_neighbors = u_in_neighbors + u_out_neighbors
-
-        # get all neighboring edges of v
-        v_in_neighbors = list(self.geo.in_edges(v))
-        v_out_neighbors = list(self.geo.out_edges(v))
-        v_neighbors = v_in_neighbors + v_out_neighbors
-
-        # combine all neighbors, remove duplicates
-        neighbors = list(set(u_neighbors + v_neighbors))
-
-        # get subset of density's edges that are in neighbors
-        if density is not None:
-            density_neighbors = density[density.index.isin(neighbors)]
-
-        # get density of row
-        density_row = density[density.index == (u, v)]
-
-        # distribute density across neighbors
-        density_neighbors = density_neighbors + (density_row / len(neighbors))
-        self.log.debug(
-            f"Distributed density of edge ({u}, {v}) to {len(density_neighbors.index)} neighbors."
-        )
-
-        # update density with density_neighbors
-        density.update(density_neighbors)
-
-        del density_neighbors
-        del density_row
-        del neighbors
-        del u_neighbors
-
-        return density
 
     def plot_edges(self):
         """
@@ -701,9 +638,9 @@ class G:
         Returns:
             None
         """
-        self.add_day_of_coverage(doc)
-        self.coverage_to_nearest_road(doc)
-        self.add_detections(doc)
+        self._add_day_of_coverage(doc)
+        self._coverage_to_nearest_road(doc)
+        self._add_detections(doc)
         try:
             self.plot_coverage(doc)
         except Exception as e:
@@ -807,7 +744,7 @@ class G:
 
         return DayOfCoverage("joined", md, nearest_edges, detections)
 
-    def coco_agg_mappings(self, operation="mean", data=pd.DataFrame()):
+    def _coco_agg_mappings(self, operation="mean", data=pd.DataFrame()):
         """
         Returns a dictionary with class IDs as keys and the specified operation as values.
 
@@ -824,7 +761,7 @@ class G:
                 agg_dict[str(class_id)] = operation
         return agg_dict
 
-    def density_per_road_segment(
+    def _density_per_road_segment(
         self,
         DoCs,
         dtbounds=(
@@ -865,15 +802,15 @@ class G:
 
         density = (
             density.groupby(["u", "v"])
-            .agg(self.coco_agg_mappings(data=detections))
+            .agg(self._coco_agg_mappings(data=detections))
             .reset_index()
         )
 
         os.makedirs(f"{INSTALL_DIR}/{PROJECT_NAME}/df/density", exist_ok=True)
         density.describe().to_csv(
-            f'{INSTALL_DIR}/{PROJECT_NAME}/df/density/density_describe.csv"
+            f'{INSTALL_DIR}/{PROJECT_NAME}/df/density/density_describe.csv'
         )
-        density.to_csv(f'{INSTALL_DIR}/{PROJECT_NAME}/df/density/density.csv")
+        density.to_csv(f'{INSTALL_DIR}/{PROJECT_NAME}/df/density/density.csv')
 
         del data
         del detections
@@ -881,7 +818,7 @@ class G:
 
         return density
 
-    def data2density(
+    def _data2density(
         self,
         plot_data,
         plot_detections,
@@ -933,7 +870,7 @@ class G:
         try:
             
             density = density.groupby(["u", "v"]).agg(
-                self.coco_agg_mappings(data=plot_detections)
+                self._coco_agg_mappings(data=plot_detections)
             )
             
         except Exception as e:
@@ -948,7 +885,7 @@ class G:
 
         return density
 
-    def plot_density_per_road_segment(
+    def _plot_density_per_road_segment(
         self,
         output_dir,
         DoCs,
@@ -1011,7 +948,7 @@ class G:
         # convert bins into upper bound
         density["binned"] = density["binned"].apply(lambda x: x.right)
 
-        norm, cmap = self.colorbar_norm_cmap(ax_bounds)
+        norm, cmap = self._colorbar_norm_cmap(ax_bounds)
 
         density.plot(
             ax=ax,
@@ -1073,7 +1010,7 @@ class G:
 
         del density
 
-    def compute_density_range(
+    def _compute_density_range(
         self,
         DoCs,
         class_id,
@@ -1137,7 +1074,7 @@ class G:
             # compute density of subset
             density = (
                 subset.groupby(["u", "v"])
-                .agg(self.coco_agg_mappings(data=detections))
+                .agg(self._coco_agg_mappings(data=detections))
                 .reset_index()
             )
             # get min and max of density
@@ -1159,7 +1096,7 @@ class G:
 
         return bounds
 
-    def colorbar_norm_cmap(self, bounds):
+    def _colorbar_norm_cmap(self, bounds):
         """
         Create a custom, continuous legend with a color map and normalized bins.
 
@@ -1211,7 +1148,7 @@ class G:
         output_dir = uuid.uuid4().hex[:8]
 
         # generate cb norm and cmap
-        bounds = self.compute_density_range(
+        bounds = self._compute_density_range(
             DoCs, class_id, dtbounds, delta, car_offset=car_offset
         )
 
@@ -1233,7 +1170,7 @@ class G:
             plot_nearest_edges = data.nearest_edges[
                 data.nearest_edges.index.isin(plot_data[IMG_ID])
             ].copy()
-            density = self.data2density(
+            density = self._data2density(
                 plot_data,
                 plot_detections,
                 plot_nearest_edges,
@@ -1257,7 +1194,7 @@ class G:
             )
 
         Parallel(n_jobs=NUM_CORES)(
-            delayed(self.plot_density_per_road_segment_parallel)(arg)
+            delayed(self._plot_density_per_road_segment_parallel)(arg)
             for arg in tqdm(
                 args, desc="Generating density-over-datetime GIF frames."
             )
@@ -1266,7 +1203,7 @@ class G:
         self.log.info("Generating GIF with id {output_dir}...")
 
         # generate gif
-        self.generate_gif(output_dir, class_id, DoCs, delta)
+        self._compose_gif(output_dir, class_id, DoCs, delta)
 
     def merge_days(self, DoCs):
         """
@@ -1332,7 +1269,7 @@ class G:
 
         return DayOfCoverage("merged", md, nearest_edges, detections)
 
-    def parallel_args_generator(self, args):
+    def _parallel_plot_args_generator(self, args):
         (
             idx,
             output_dir,
@@ -1349,7 +1286,7 @@ class G:
         ) = args
 
         # exceptions are handled within data2density code
-        density = self.data2density(
+        density = self._data2density(
             plot_data,
             plot_detections,
             plot_nearest_edges,
@@ -1360,7 +1297,7 @@ class G:
         copy_of_neighbors = self.precomputed_neighbors.copy()
 
         try:
-            density = self.smoothing_optimized(density, idx, copy_of_neighbors)
+            density = self.smoothing(density, idx, copy_of_neighbors)
         except Exception as e:
             self.log.error(f"Error in smoothing for {tbounds}: {e}")
             return
@@ -1425,7 +1362,7 @@ class G:
         output_dir = uuid.uuid4().hex[:8]
 
         # generate cb norm and cmap
-        bounds = self.compute_density_range(
+        bounds = self._compute_density_range(
             DoCs,
             class_id,
             tbounds,
@@ -1494,7 +1431,7 @@ class G:
                 continue
 
         args = Parallel(n_jobs=3)(
-            delayed(self.parallel_args_generator)(arg)
+            delayed(self._parallel_plot_args_generator)(arg)
             for arg in tqdm(
                 first_it_args,
                 desc="Generating arguments for density plotting.",
@@ -1507,14 +1444,14 @@ class G:
 
         self.log.info(f"Plotting density per road segment for {DoCs}.")
         Parallel(n_jobs=NUM_CORES)(
-            delayed(self.plot_density_per_road_segment_parallel)(arg)
+            delayed(self._plot_density_per_road_segment_parallel)(arg)
             for arg in tqdm(args, desc="Plotting density per road segment.")
         )
 
         # generate gif
-        self.generate_gif(output_dir, class_id, DoCs, delta)
+        self._compose_gif(output_dir, class_id, DoCs, delta)
 
-    def plot_density_per_road_segment_parallel(self, args):
+    def _plot_density_per_road_segment_parallel(self, args):
         """
         Plots the density per road segment in parallel.
 
@@ -1545,7 +1482,7 @@ class G:
             tod_flag,
         ) = args
         try:
-            self.plot_density_per_road_segment(
+            self._plot_density_per_road_segment(
                 output_dir,
                 DoCs,
                 delta,
@@ -1561,7 +1498,7 @@ class G:
             self.log.error(f"Error in plot density per road segment - {b}: {e}")
             return 4
 
-    def generate_gif(
+    def _compose_gif(
         self,
         frames_dir,
         class_id,
