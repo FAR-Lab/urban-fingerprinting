@@ -13,14 +13,19 @@ import geocoder as gc
 sys.path.append(os.path.abspath(os.path.join(os.getcwd(), os.pardir)))
 sys.path.append(os.path.abspath(os.path.join(os.getcwd(), os.pardir, os.pardir)))
 
+from user.params.io import INSTALL_DIR, PROJECT_NAME
+
 from src.utils.logger import setup_logger
 
 import pandas as pd
 import numpy as np
 
+from tqdm import tqdm
+
 class Geocoder:
     def __init__(self, dataset_path, state='New York'): 
         self.log = setup_logger("Geocoder")
+        self.log.setLevel("INFO")
         self.dataset_path = dataset_path
         self.dataset = pd.read_csv(self.dataset_path, engine='pyarrow')
 
@@ -28,7 +33,8 @@ class Geocoder:
             self.log.error("Invalid dataset.")
             raise Exception("Invalid dataset.")
 
-        self.geocoded = pd.DataFrame()
+        self.intersections_1 = []
+        self.intersections_2 = []
         self.state = state
         self.preprocess() 
     
@@ -56,11 +62,10 @@ class Geocoder:
         
         self.expand_boro()
 
-        self.dataset['address'] = self.dataset['main_st'].str.title() + ' at ' + self.dataset['from_st'].str.title() +', ' + self.dataset['boro'] + ', ' + self.state
+        self.dataset['intersection_1'] = self.dataset['main_st'].str.title() + ' at ' + self.dataset['from_st'].str.title() + ', ' + self.dataset['boro'] + ', ' + self.state
+        self.dataset['intersection_2'] = self.dataset['main_st'].str.title() + ' at ' + self.dataset['to_st'].str.title() + ', ' + self.dataset['boro'] + ', ' + self.state
 
         self.log.success("Preprocessing complete.")
-
-        print(self.dataset.address.sample(n=5).tolist())
 
 
     def expand_boro(self): 
@@ -81,7 +86,42 @@ class Geocoder:
         return g.json
     
     def __call__(self):
-        print(self.geocode(self.dataset.address.sample(n=1)))
+        for intersection in tqdm(self.dataset.intersection_1.tolist(), desc="Geocoding intersection 1"): 
+            self.intersections_1.append(self.geocode(intersection))
+
+        for intersection in tqdm(self.dataset.intersection_2.tolist(), desc="Geocoding intersection 2"):
+            self.intersections_2.append(self.geocode(intersection))
+
+        self.intersections_1 = pd.json_normalize(self.intersections_1)
+        self.intersections_2 = pd.json_normalize(self.intersections_2)
+
+        os.makedirs(f'{INSTALL_DIR}/{PROJECT_NAME}/geocoding', exist_ok=True)
+        self.intersections_1.to_csv(f'{INSTALL_DIR}/{PROJECT_NAME}/geocoding/intersections_1.csv')
+        self.intersections_2.to_csv(f'{INSTALL_DIR}/{PROJECT_NAME}/geocoding/intersections_2.csv')
+
+        self.dataset = self.dataset.reset_index(drop=True)
+        self.intersections_1 = self.intersections_1.reset_index(drop=True)
+        self.intersections_2 = self.intersections_2.reset_index(drop=True)
+
+        # add '_1' suffix to all columns in intersections_1
+        self.intersections_1.columns = [str(col) + '_1' for col in self.intersections_1.columns]
+
+        # add '_2' suffix to all columns in intersections_2
+        self.intersections_2.columns = [str(col) + '_2' for col in self.intersections_2.columns]
+
+        self.dataset = pd.concat([self.dataset, self.intersections_1, self.intersections_2], axis=1)
+
+        # pretty-log distribution of sum(confidence_1, confidence_2)
+        confidence = self.dataset['confidence_1'] * 0.5 + self.dataset['confidence_2'] * 0.5
+        self.log.info(f"Confidence Distribution:\n{confidence.describe().to_string()}")
+
+        score = self.dataset['score_1'] * 0.5 + self.dataset['score_2'] * 0.5
+        self.log.info(f"Score Distribution:\n{score.describe().to_string()}")
+
+        self.dataset.to_csv(f'{INSTALL_DIR}/{PROJECT_NAME}/geocoding/geocoded_dataset.csv', index=False)
+
+        self.log.success("Geocoding complete.")
+        
 
 
 

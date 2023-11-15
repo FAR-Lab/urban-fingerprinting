@@ -3,6 +3,8 @@ import sys
 
 sys.path.append(os.path.abspath(os.path.join('../..')))
 
+from user.params.io import INSTALL_DIR, PROJECT_NAME
+
 from glob import glob
 import pandas as pd 
 import geopandas as gpd 
@@ -52,4 +54,4 @@ if __name__ == "__main__":
     for index, row in flooding.iterrows():
         im.add_311_marker(row)
 
-    im.save("../../output/inspection_maps/inspection_map.html")
+    im.save(f"{INSTALL_DIR}/{PROJECT_NAME}/inspection_maps/inspection_map.html")

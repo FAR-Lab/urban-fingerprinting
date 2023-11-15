@@ -28,6 +28,14 @@ from tqdm import tqdm
 ##### This is done in the create_batch_symlinks function
 ##### This script processes about 600 frames per second, after startup overhead
 
+import os 
+import sys 
+
+sys.path.append(os.path.abspath(os.path.join(os.getcwd(), os.pardir)))
+sys.path.append(os.path.abspath(os.path.join(os.getcwd(), os.pardir, os.pardir)))
+
+from user.params.io import INSTALL_DIR, PROJECT_NAME
+
 
 class YOLO_Detector:
     """
@@ -37,10 +45,10 @@ class YOLO_Detector:
 
     Attributes
     ----------
-    TOP_LEVEL_DIR : str
+    TOP_LEVEL_FRAMES_DIR : str
         The top level directory containing the frames to be processed
     DAY_OF_COVERAGE : str
-        The day of coverage to be processed (assumes a TOP_LEVEL_DIR/DAY_OF_COVERAGE directory structure)
+        The day of coverage to be processed (assumes a TOP_LEVEL_FRAMES_DIR/DAY_OF_COVERAGE directory structure)
     YOLO_DIR : str
         The directory containing the yolov7 repo
     YOLO_WEIGHTS : str
@@ -66,14 +74,14 @@ class YOLO_Detector:
 
     def __init__(
         self,
-        TOP_LEVEL_DIR,
+        TOP_LEVEL_FRAMES_DIR,
         DAY_OF_COVERAGE,
         YOLO_DIR="./yolov7",
         YOLO_WEIGHTS="./yolov7_weights/yolov7-e6e.pt",
-        OUTPUT_DIR="../../output/yolo/",
+        OUTPUT_DIR=f'{INSTALL_DIR}/{PROJECT_NAME}/yolo/",
     ):
         self.log = logging.getLogger(__name__)
-        self.TOP_LEVEL_DIR = TOP_LEVEL_DIR
+        self.TOP_LEVEL_FRAMES_DIR = TOP_LEVEL_FRAMES_DIR
         self.YOLO_DIR = YOLO_DIR
         self.DAY_OF_COVERAGE = DAY_OF_COVERAGE
         self.OUTPUT_DIR = OUTPUT_DIR
@@ -175,7 +183,7 @@ class YOLO_Detector:
         # can fit 16 detection tasks on a single GPU
         if write_frames_lists:
             frames_dirs = glob.glob(
-                f"{self.TOP_LEVEL_DIR}/{self.DAY_OF_COVERAGE}/*/frames/"
+                f"{self.TOP_LEVEL_FRAMES_DIR}/{self.DAY_OF_COVERAGE}/*/frames/"
             )
             frames_paths_list = self.write_n_frames_list(
                 frames_dirs,
@@ -195,9 +203,9 @@ class YOLO_Detector:
         self.run_detect_scripts()
 
 
-def ui_wrapper(TOP_LEVEL_DIR, DAY_OF_COVERAGE):
+def ui_wrapper(TOP_LEVEL_FRAMES_DIR, DAY_OF_COVERAGE):
     detector = YOLO_Detector(
-        TOP_LEVEL_DIR=TOP_LEVEL_DIR, DAY_OF_COVERAGE=DAY_OF_COVERAGE
+        TOP_LEVEL_FRAMES_DIR=TOP_LEVEL_FRAMES_DIR, DAY_OF_COVERAGE=DAY_OF_COVERAGE
     )
     detector.queue_detect_tasks(n_workers=detector.NUM_GPUS)
 

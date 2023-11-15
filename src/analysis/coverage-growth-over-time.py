@@ -3,6 +3,10 @@ import sys
 import os
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../..")))
+
+from user.params.io import INSTALL_DIR, PROJECT_NAME
+
 import pandas as pd
 import matplotlib.pyplot as plt
 from analysis.graph import G
@@ -39,7 +43,7 @@ def coverage_growth_over_time(G):
         roads_covered_growth[DoC.date] = len(roads_covered.index)
 
     timestamp = pd.Timestamp.now().strftime("%Y-%m-%d_%H-%M-%S")
-    os.makedirs("../../output/coverage_growth", exist_ok=True)
+    os.makedirs(f'{INSTALL_DIR}/{PROJECT_NAME}/coverage_growth", exist_ok=True)
 
     df = pd.DataFrame()
     df["roads_covered"] = roads_covered_growth
@@ -48,7 +52,7 @@ def coverage_growth_over_time(G):
         f"Saving coverage growth to output/coverage_growth/{len(G.days_of_coverage)}_days_of_coverage_{timestamp}.csv..."
     )
     df.to_csv(
-        f"../../output/coverage_growth/{len(G.days_of_coverage)}_days_of_coverage_{timestamp}.csv"
+        f"{INSTALL_DIR}/{PROJECT_NAME}/coverage_growth/{len(G.days_of_coverage)}_days_of_coverage_{timestamp}.csv"
     )
 
     return df
@@ -87,8 +91,8 @@ def plot_coverage_growth_over_time(data_frame, graph):
     ax.set_title("Roads Covered With Successive Days of Coverage")
 
     # Create the output directories.
-    os.makedirs("../../output/coverage_growth", exist_ok=True)
-    os.makedirs("../../output/coverage_growth/figures", exist_ok=True)
+    os.makedirs(f'{INSTALL_DIR}/{PROJECT_NAME}/coverage_growth", exist_ok=True)
+    os.makedirs(f'{INSTALL_DIR}/{PROJECT_NAME}/coverage_growth/figures", exist_ok=True)
 
     # Get the current timestamp.
     timestamp = pd.Timestamp.now().strftime("%Y-%m-%d_%H-%M-%S")
@@ -100,7 +104,7 @@ def plot_coverage_growth_over_time(data_frame, graph):
     # Add the legend and save the figure.
     plt.legend()
     plt.savefig(
-        f"../../output/coverage_growth/figures/{len(graph.days_of_coverage)}_days_of_coverage_{timestamp}.png"
+        f"{INSTALL_DIR}/{PROJECT_NAME}/coverage_growth/figures/{len(graph.days_of_coverage)}_days_of_coverage_{timestamp}.png"
     )
 
 

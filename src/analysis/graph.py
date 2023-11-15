@@ -58,6 +58,8 @@ from src.visualization import animated_map as am
 from src.analysis.day_of_coverage import DayOfCoverage
 from src.processing.h3_utils import h3_to_polygon, crop_within_polygon
 
+from user.params.io import INSTALL_DIR, PROJECT_NAME
+
 from user.params.data import (
     LONGITUDE_COL,
     LATITUDE_COL,
@@ -200,13 +202,13 @@ class G:
         """
 
         # Check if md file has already been written to output
-        if os.path.exists(f"../../output/df/{day_of_coverage}/md.csv"):
+        if os.path.exists(f"{INSTALL_DIR}/{PROJECT_NAME}/df/{day_of_coverage}/md.csv"):
             # read md file from output
             md = pd.read_csv(
-                f"../../output/df/{day_of_coverage}/md.csv", engine="pyarrow"
+                f"{INSTALL_DIR}/{PROJECT_NAME}/df/{day_of_coverage}/md.csv", engine="pyarrow"
             )
             md = gpd.GeoDataFrame(
-                md, geometry=wkt.loads(md["geometry"]), crs=COORD_CRS
+                md, geometry=wkt.loads(md["geometry"]), crs=PROJ_CRS
             )
             # return md
             self.log.info(
@@ -280,8 +282,8 @@ class G:
         md = md.to_crs(PROJ_CRS)
 
         if self.WRITE_MODE:
-            os.makedirs(f"../../output/df/{day_of_coverage}", exist_ok=True)
-            md.to_csv(f"../../output/df/{day_of_coverage}/md.csv")
+            os.makedirs(f"{INSTALL_DIR}/{PROJECT_NAME}/df/{day_of_coverage}", exist_ok=True)
+            md.to_csv(f"{INSTALL_DIR}/{PROJECT_NAME}/df/{day_of_coverage}/md.csv")
             self.log.info(
                 f"Wrote metadata to output for day of coverage {day_of_coverage}."
             )
@@ -343,11 +345,11 @@ class G:
 
         # Check if nearest edges have already been written to output
         if os.path.exists(
-            f"../../output/df/{day_of_coverage}/nearest_edges.csv"
+            f"{INSTALL_DIR}/{PROJECT_NAME}/df/{day_of_coverage}/nearest_edges.csv"
         ):
             # read nearest edges from output
             nearest_edges = pd.read_csv(
-                f"../../output/df/{day_of_coverage}/nearest_edges.csv",
+                f"{INSTALL_DIR}/{PROJECT_NAME}/df/{day_of_coverage}/nearest_edges.csv",
                 engine="pyarrow",
                 index_col=IMG_ID,
             )
@@ -412,9 +414,9 @@ class G:
         DoC.nearest_edges = nearest_edges
 
         if self.WRITE_MODE & (not self.crop):
-            os.makedirs(f"../../output/df/{day_of_coverage}", exist_ok=True)
+            os.makedirs(f"{INSTALL_DIR}/{PROJECT_NAME}/df/{day_of_coverage}", exist_ok=True)
             nearest_edges.to_csv(
-                f"../../output/df/{day_of_coverage}/nearest_edges.csv"
+                f"{INSTALL_DIR}/{PROJECT_NAME}/df/{day_of_coverage}/nearest_edges.csv"
             )
             self.log.info(
                 f"Wrote nearest edges to output for day of coverage {day_of_coverage}."
@@ -430,7 +432,7 @@ class G:
         Adds a GeoDataFrame object representing the detections for the given day of coverage to the graph.
         """
         detections = pd.read_csv(
-            f"../../output/df/{day_of_coverage}/detections.csv",
+            f"{INSTALL_DIR}/{PROJECT_NAME}/df/{day_of_coverage}/detections.csv",
             engine="pyarrow",
             index_col=0,
         )
@@ -565,7 +567,7 @@ class G:
         _, ax = plt.subplots(figsize=(20, 20))
         self.gdf_edges.plot(ax=ax, color="black", linewidth=0.5)
         rID = uuid.uuid4().hex[:8]
-        plt.savefig(f"../../output/plots/edges_{rID}.png")
+        plt.savefig(f"{INSTALL_DIR}/{PROJECT_NAME}/plots/edges_{rID}.png")
         plt.close()
 
     def plot_coverage(self, day_of_coverage):
@@ -607,7 +609,7 @@ class G:
 
         rID = datetime.datetime.now().strftime("%Y-%m-%d_%H:%M:%S")
         plt.savefig(
-            f"../../output/plots/coverage_{rID}.png",
+            f"{INSTALL_DIR}/{PROJECT_NAME}/plots/coverage_{rID}.png",
             bbox_inches="tight",
             pad_inches=0,
         )
@@ -677,10 +679,10 @@ class G:
         
 
         rID = datetime.datetime.now().strftime("%Y-%m-%d_%H:%M:%S")
-        os.makedirs(f"../../output/plots/{day_of_coverage}", exist_ok=True)
+        os.makedirs(f"{INSTALL_DIR}/{PROJECT_NAME}/plots/{day_of_coverage}", exist_ok=True)
         try:
             plt.savefig(
-                f"../../output/plots/{day_of_coverage}/{class_id}_density_{rID}.png",
+                f"{INSTALL_DIR}/{PROJECT_NAME}/plots/{day_of_coverage}/{class_id}_density_{rID}.png",
                 bbox_inches="tight",
                 pad_inches=0,
             )
@@ -710,7 +712,7 @@ class G:
             self.plot_detections(doc, 2)
         except Exception as e:
             self.log.error(f"Error plotting detections for {doc}: {str(e)}")
-        self.log.info(f"Added {doc} to graph.")
+        self.log.info(f"Initialized {doc} data in graph.")
 
     def generate_gif(self, DoCs):
         """
@@ -748,28 +750,60 @@ class G:
         # Get nearest edges for each day of coverage
         nearest_edges = []
         for doc in DoCs:
-            nearest_edges.append(self.get_day_of_coverage(doc).nearest_edges)
+            try:
+                nearest_edges.append(self.get_day_of_coverage(doc).nearest_edges)
+            except Exception as e:
+                self.log.error(
+                    f"Error getting nearest edges for day of coverage {doc}: {str(e)}"
+                )
+                continue
 
         # Concatenate nearest edges
-        nearest_edges = pd.concat(nearest_edges)
+        
+        try:
+            nearest_edges = pd.concat(nearest_edges)
+        except TypeError as e: 
+            self.log.error(f"Error concatenating nearest edges: {str(e)}")
 
         # Get detections for each day of coverage
         detections = []
         for doc in DoCs:
-            detections.append(self.get_day_of_coverage(doc).detections)
-
+            try:
+                detections.append(self.get_day_of_coverage(doc).detections)
+            except Exception as e:
+                self.log.error(
+                    f"Error getting detections for day of coverage {doc}: {str(e)}"
+                )
+                continue
+            
         # Concatenate detections
-        detections = pd.concat(detections)
+        try:
+            detections = pd.concat(detections)
+        except TypeError as e:
+            self.log.error(f"Error concatenating detections: {str(e)}")
+
+        
 
         # Get metadata for each day of coverage
         md = []
         for doc in DoCs:
-            md.append(self.get_day_of_coverage(doc).frames_data)
-
-        # Concatenate metadata
-        md = pd.concat(md)
-        md[TIME_COL] = pd.to_datetime(md[TIME_COL], unit="ms")
-        md[TIME_COL] = md[TIME_COL].dt.tz_localize("UTC").dt.tz_convert(TZ)
+            try:
+                md.append(self.get_day_of_coverage(doc).frames_data)
+            except Exception as e:
+                self.log.error(
+                    f"Error getting metadata for day of coverage {doc}: {str(e)}"
+                )
+                continue
+        
+        
+        try:
+            # Concatenate metadata
+            md = pd.concat(md)
+            md[TIME_COL] = pd.to_datetime(md[TIME_COL], unit="ms")
+            md[TIME_COL] = md[TIME_COL].dt.tz_localize("UTC").dt.tz_convert(TZ)
+        except TypeError as e:
+            self.log.error(f"Error concatenating metadata: {str(e)}")
+        
 
         return DayOfCoverage("joined", md, nearest_edges, detections)
 
@@ -835,11 +869,11 @@ class G:
             .reset_index()
         )
 
-        os.makedirs(f"../../output/df/density", exist_ok=True)
+        os.makedirs(f"{INSTALL_DIR}/{PROJECT_NAME}/df/density", exist_ok=True)
         density.describe().to_csv(
-            "../../output/df/density/density_describe.csv"
+            f'{INSTALL_DIR}/{PROJECT_NAME}/df/density/density_describe.csv"
         )
-        density.to_csv("../../output/df/density/density.csv")
+        density.to_csv(f'{INSTALL_DIR}/{PROJECT_NAME}/df/density/density.csv")
 
         del data
         del detections
@@ -1028,9 +1062,9 @@ class G:
         ax.title.set_position([0.5, 1.05])
 
         rID = datetime.datetime.now().strftime("%Y-%m-%d_%H:%M:%S")
-        os.makedirs(f"../../output/plots/{output_dir}", exist_ok=True)
+        os.makedirs(f"{INSTALL_DIR}/{PROJECT_NAME}/plots/{output_dir}", exist_ok=True)
         plt.savefig(
-            f"../../output/plots/{output_dir}/{class_id}_density_{rID}.png",
+            f"{INSTALL_DIR}/{PROJECT_NAME}/plots/{output_dir}/{class_id}_density_{rID}.png",
             bbox_inches="tight",
             pad_inches=0,
         )
@@ -1550,7 +1584,7 @@ class G:
             loop (int, optional): The number of times the GIF should loop. Defaults to 0.
         """
 
-        os.makedirs(f"../../output/gifs", exist_ok=True)
+        os.makedirs(f"{INSTALL_DIR}/{PROJECT_NAME}/gifs", exist_ok=True)
 
         now = datetime.datetime.now().strftime("%Y-%m-%d_%H:%M:%S")
 
@@ -1558,13 +1592,13 @@ class G:
             self.log.error("No frames directory found.")
             return
 
-        fp_out = f"../../output/gifs/{class_id}_{frames_dir}_{now}.gif"
+        fp_out = f"{INSTALL_DIR}/{PROJECT_NAME}/gifs/{class_id}_{frames_dir}_{now}.gif"
 
         with contextlib.ExitStack() as stack:
             # lazily load images
             imgs = (
                 stack.enter_context(Image.open(f))
-                for f in sorted(glob(f"../../output/plots/{frames_dir}/*.png"))
+                for f in sorted(glob(f"{INSTALL_DIR}/{PROJECT_NAME}/plots/{frames_dir}/*.png"))
             )
 
             # extract  first image from iterator

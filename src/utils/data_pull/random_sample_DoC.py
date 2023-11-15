@@ -33,7 +33,7 @@ class ImagePull:
         self.proj_path = proj_path
         self.DoC = DoC
         self.csvs = glob(os.path.join(self.proj_path, self.DoC, "*", "*.csv"))
-        self.pull_from_all_when_no_coords = False
+        self.pull_from_all_when_no_coords = True
 
         # hex should be in parent directory of csv file
         # filter csvs list to only include csv files with a parent directory that is a valid h3 hexagon
@@ -91,7 +91,7 @@ class ImagePull:
         os.makedirs(output_dir, exist_ok=True)
 
         # Coordinate filtering, if applicable
-        if len(coords) > 0:
+        if coords and len(coords) > 0:
             self.log.info(
                 f"Filtering images to only include images within {proximity} feet of coords..."
             )
@@ -221,11 +221,16 @@ class ImagePull:
 
             # snew_img_name = f"{os.path.splitext(os.path.basename(img_path))[0]}
             try:
+                if coords and len(coords) > 0:
+                    output_path = f"{image['frame_id']}_{image['distance']:.3f}_{str(image['time_diff'])}_{image['Complaint Type'].replace('/','-')}_{image['Descriptor'].replace('/','-')}.jpg"
+                else: 
+                    output_path = f"{image['frame_id']}.jpg"
+
                 os.symlink(
                     img_path,
                     os.path.join(
                         output_dir,
-                        f"{image['frame_id']}_{image['distance']:.3f}_{str(image['time_diff'])}_{image['Complaint Type'].replace('/','-')}_{image['Descriptor'].replace('/','-')}.jpg"
+                        output_path
                     )
                 )
             except FileExistsError:
@@ -250,8 +255,8 @@ class ImagePull:
         # Return path of output_dir
         return output_dir
 
-    def __run__(self, N, output_dir, coords=None, proximity=1000):
-        self.N = N
+    def __call__(self, N, output_dir, coords=None, proximity=1000):
+        self.N = int(N)
         self.output_dir = output_dir
         self.coords = coords
         self.proximity = proximity

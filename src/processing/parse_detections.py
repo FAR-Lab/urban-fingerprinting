@@ -12,6 +12,8 @@ import sys
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../..")))
 
+from user.params.io import INSTALL_DIR, PROJECT_NAME
+
 from user.params.data import IMG_ID
 
 from tqdm import tqdm
@@ -72,9 +74,9 @@ class Parser:
         self.DAY_OF_COVERAGE = DAY_OF_COVERAGE
 
         self.PREDICTIONS_REGEX = (
-            f"../../output/yolo/{DAY_OF_COVERAGE}/*/exp*/labels/*.txt"
+            f"{INSTALL_DIR}/{PROJECT_NAME}/yolo/{DAY_OF_COVERAGE}/*/exp*/labels/*.txt"
         )
-        self.IMAGES_REGEX = f"../../output/yolo/{DAY_OF_COVERAGE}/frames_lists/*/*.jpg"
+        self.IMAGES_REGEX = f"{INSTALL_DIR}/{PROJECT_NAME}/yolo/{DAY_OF_COVERAGE}/frames_lists/*/*.jpg"
 
         self.IMAGES_LIST = glob(self.IMAGES_REGEX)
         self.log.info(
@@ -176,11 +178,11 @@ class Parser:
         )
 
         # make sure output dir exists
-        os.makedirs(f"../../output/df/{self.DAY_OF_COVERAGE}", exist_ok=True)
+        os.makedirs(f"{INSTALL_DIR}/{PROJECT_NAME}/df/{self.DAY_OF_COVERAGE}", exist_ok=True)
 
         self.ALL_PREDICTIONS.merge(
             self.ALL_DETECTIONS, left_index=True, right_index=True
-        ).to_csv(f"../../output/df/{self.DAY_OF_COVERAGE}/detections.csv")
+        ).to_csv(f"{INSTALL_DIR}/{PROJECT_NAME}/df/{self.DAY_OF_COVERAGE}/detections.csv")
 
         if len(self.ALL_DETECTIONS) != len(self.ALL_PREDICTIONS):
             self.log.error(

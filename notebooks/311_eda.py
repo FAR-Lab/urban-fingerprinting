@@ -44,15 +44,15 @@ nyc_311.info()
 
 # %%
 # make output/eda directory if it doesn't exist
-if not os.path.exists('../output/eda'):
-    os.makedirs('../output/eda')
-nyc_311['Complaint Type'].value_counts().sort_values(ascending=False).to_csv('../output/eda/311_complaint_types.csv')
+if not os.path.exists(f'{INSTALL_DIR}/{PROJECT_NAME}/eda'):
+    os.makedirs(f'{INSTALL_DIR}/{PROJECT_NAME}/eda')
+nyc_311['Complaint Type'].value_counts().sort_values(ascending=False).to_csv(f'{INSTALL_DIR}/{PROJECT_NAME}/eda/311_complaint_types.csv')
 
 # %%
 # make output/eda directory if it doesn't exist
-if not os.path.exists('../output/eda'):
-    os.makedirs('../output/eda')
-nyc_311['Descriptor'].value_counts().sort_values(ascending=False).to_csv('../output/eda/311_descriptor_counts.csv')
+if not os.path.exists(f'{INSTALL_DIR}/{PROJECT_NAME}/eda'):
+    os.makedirs(f'{INSTALL_DIR}/{PROJECT_NAME}/eda')
+nyc_311['Descriptor'].value_counts().sort_values(ascending=False).to_csv(f'{INSTALL_DIR}/{PROJECT_NAME}/eda/311_descriptor_counts.csv')
 
 # %%
 list(nyc_311['Complaint Type'].unique())
@@ -100,7 +100,7 @@ flooding = sep29[sep29['Descriptor'].isin(flooding_descs)]
 # tight layout
 #plt.tight_layout()
 
-#plt.savefig('../output/plots/311_flooding.png', dpi=400, bbox_inches='tight')
+#plt.savefig(f'{INSTALL_DIR}/{PROJECT_NAME}/plots/311_flooding.png', dpi=400, bbox_inches='tight')
 
 
 # %%
@@ -136,7 +136,7 @@ flooding.to_csv('../data/coords/sep29_flooding.csv', index=False)
 #ax.axvline(x=5, linestyle='--', color='red')
 
 
-#plt.savefig('../output/plots/311_flooding_dist.png', dpi=400, bbox_inches='tight')
+#plt.savefig(f'{INSTALL_DIR}/{PROJECT_NAME}/plots/311_flooding_dist.png', dpi=400, bbox_inches='tight')
 
 
 # %%
@@ -220,12 +220,12 @@ for sample in samples:
 
     ax.set_title(f'Sample v. Reports: {sample.rsplit("_",6)[2]}', fontsize=25)
 
-    os.makedirs('../output/plots/flooding_sample_verification', exist_ok=True)
+    os.makedirs(f'{INSTALL_DIR}/{PROJECT_NAME}/plots/flooding_sample_verification', exist_ok=True)
 
     plt.axis('off')
 
 
-    plt.savefig(f'../output/plots/flooding_sample_verification/{sample.rsplit("_",6)[2].replace("/","")}_w_depicts.png', dpi=400, bbox_inches='tight')
+    plt.savefig(f'{INSTALL_DIR}/{PROJECT_NAME}/plots/flooding_sample_verification/{sample.rsplit("_",6)[2].replace("/","")}_w_depicts.png', dpi=400, bbox_inches='tight')
 
     plt.clf()
     

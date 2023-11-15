@@ -11,6 +11,8 @@ import os
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../..")))
 
+from user.params.io import INSTALL_DIR, PROJECT_NAME
+
 from src.utils.logger import setup_logger
 
 from glob import glob
@@ -35,7 +37,7 @@ class Cropper:
         self.class_ids = [0]
         self.class_ids = list(map(str, self.class_ids))
 
-        os.makedirs(f"../../output/cropper", exist_ok=True)
+        os.makedirs(f"{INSTALL_DIR}/{PROJECT_NAME}/cropper", exist_ok=True)
 
     async def crop(self, image_path):
         """Crop image to bounding box.
@@ -55,7 +57,7 @@ class Cropper:
         # get annotation path
         try:
             annotation_path = glob(
-                f"../../output/yolo/{self.DoC}/*/exp/labels/{image_id}.txt"
+                f"{INSTALL_DIR}/{PROJECT_NAME}/yolo/{self.DoC}/*/exp/labels/{image_id}.txt"
             )[0]
         except IndexError:
             self.log.error(f"No annotation found for {image_id}.txt")
@@ -104,7 +106,7 @@ class Cropper:
                 # right
                 right = cx + w / 2
 
-                output_dir = f"../../output/cropper/{class_id}"
+                output_dir = f"{INSTALL_DIR}/{PROJECT_NAME}/cropper/{class_id}"
                 # make sure output directory exists
                 os.makedirs(output_dir, exist_ok=True)
 
