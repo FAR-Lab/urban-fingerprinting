@@ -7,3 +7,6 @@
 [submodule "src/cv/LAVIS"]
 	path = src/cv/LAVIS
 	url = git@github.com:salesforce/LAVIS.git
+[submodule "static/models/bdd100k-models"]
+	path = static/models/bdd100k-models
+	url = git@github.com:SysCV/bdd100k-models.git
