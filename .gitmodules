@@ -10,3 +10,6 @@
 [submodule "static/models/bdd100k-models"]
 	path = static/models/bdd100k-models
 	url = git@github.com:SysCV/bdd100k-models.git
+[submodule "static/libraries/mmsegmentation"]
+	path = static/libraries/mmsegmentation
+	url = git@github.com:open-mmlab/mmsegmentation.git
