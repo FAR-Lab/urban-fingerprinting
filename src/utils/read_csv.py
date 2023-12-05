@@ -6,13 +6,14 @@
 # with convenience manipulations for working with Nexar frames metadata. 
 
 # Import libraries
-import pandas as pd
-
-import os 
-import sys 
-import inspect 
+import os
+import sys
+import inspect
 import re
+
+import pandas as pd
 import numpy as np
+
 
 # append ../ to sys path
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -30,10 +31,11 @@ from src.utils.logger import setup_logger
 # Define function with that takes generic args and kwargs of the pandas.read_csv() function
 def read_csv(*args, **kwargs):
 
+    # Setup logger, should share state with all read_csv() calls
     log = setup_logger('Nexar Metadata Reader')
     log.setLevel('INFO')
 
-    # Read in the CSV file
+    # READING IN CSV
 
     # get function signature of stock pd.read_csv() function 
     pd_signature = str(inspect.signature(pd.read_csv))
