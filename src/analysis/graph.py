@@ -21,7 +21,6 @@ from fire import Fire
 from tqdm import tqdm
 
 tqdm.pandas()
-from tqdm.contrib.concurrent import process_map
 
 import matplotlib.pyplot as plt
 import matplotlib.style as mplstyle
@@ -83,41 +82,6 @@ NUM_CORES = 8
 
 
 class G:
-    """
-    A class representing a graph object.
-
-    Attributes:
-    - DEBUG_MODE (bool): A flag indicating whether debug mode is on or off.
-    - WRITE_MODE (bool): A flag indicating whether write mode is on or off.
-    - log (logging.Logger): A logger object for logging messages.
-    - PROJ_PATH (str): The path to the project directory.
-    - days_of_coverage (list): A list of DayOfCoverage objects representing the days of coverage.
-    - geo (networkx.MultiDiGraph): A MultiDiGraph object representing the graph.
-    - gdf_nodes (geopandas.GeoDataFrame): A GeoDataFrame object representing the nodes of the graph.
-    - gdf_edges (geopandas.GeoDataFrame): A GeoDataFrame object representing the edges of the graph.
-
-    Methods:
-    - toggle_debug(): Toggles the debug mode flag.
-    - toggle_latex_font(): Toggles the LaTeX font flag.
-    - get_frames_worker(folder): Returns a list of all .jpg files in the given folder.
-    - get_md_worker(md_csv): Returns a pandas DataFrame object representing the metadata from the given CSV file.
-    - get_data(day_of_coverage, num_workers): Returns a GeoDataFrame object representing the metadata for the given day of coverage.
-    - add_day_of_coverage(day_of_coverage): Adds a DayOfCoverage object representing the given day of coverage to the graph.
-    - get_day_of_coverage(day_of_coverage): Returns a DayOfCoverage object representing the given day of coverage.
-    - nearest_road_worker(subset): Returns a list of the nearest edges for each row in the given subset of metadata.
-    - coverage_to_nearest_road(day_of_coverage): Calculates the nearest road for each frame in the given day of coverage.
-    - add_detections(day_of_coverage): Adds a GeoDataFrame object representing the detections for the given day of coverage to the graph.
-    - plot_edges(): Plots the edges of the graph.
-    - plot_coverage(day_of_coverage): Plots the coverage of the given day of coverage.
-    - plot_detections(day_of_coverage, class_id): Plots the detections of the given class for the given day of coverage.
-    - join_days(DoCs): Concatenates the metadata, nearest edges, and detections of multiple days of coverage into a single DayOfCoverage object.
-    - coco_agg_mappings(operation='mean', data=pd.DataFrame()): Returns a dictionary with class IDs as keys and the specified operation as values.
-    - density_per_road_segment(DoCs, dtbounds=(datetime.datetime(1970,1,1,0,0,0), datetime.datetime(2024,1,1,0,0,0))): Calculates the density of detections per road segment within a given time range.
-    - generate_gif(DoCs): Generates an animated chloropleth GIF using the given DoCs (days of coverage) data.
-    - merge_days(DoCs): Merges the metadata, nearest edges, and detections of multiple days of coverage into a single DayOfCoverage object.
-    - plot_density_per_road_segment(DoCs, dtbounds=(datetime.datetime(1970,1,1,0,0,0), datetime.datetime(2024,1,1,0,0,0))): Plots the density of detections per road segment within a given time range.
-    """
-
     def __init__(self, proj_path, graphml_input, crop=False, crop_id=None, write=False):
         self.DEBUG_MODE = False
         self.WRITE_MODE = write
@@ -536,13 +500,29 @@ class G:
             legend_kwds={
                 "label": "Number of frames",
                 "orientation": "horizontal",
+
+
             },
         )
+
+        # set colorbar font size
+        cb = ax.get_figure().get_axes()[1]
+        cb.tick_params(labelsize=35)
+
+        # set colorbar label size
+        cb.set_ylabel(cb.get_ylabel(), fontsize=40)
+
+        # set colorbar title size
+        cb.set_title(cb.get_title(), fontsize=40)
 
         ax.set_axis_off()
         ax.margins(0)
         ax.set_title(f"Coverage for {day_of_coverage}")
         ax.title.set_size(50)
+
+        # add padding between title and plot
+        plt.subplots_adjust(top=0.95)
+        
 
         rID = datetime.datetime.now().strftime("%Y-%m-%d_%H:%M:%S")
         plt.savefig(
@@ -565,7 +545,11 @@ class G:
         
         coverage = DoC.detections.merge(DoC.nearest_edges, left_index=True, right_on=IMG_ID, how="left")
         
-        coverage = coverage.dropna(subset=['osmid'], axis=0)
+        try:
+            coverage = coverage.dropna(subset=['osmid'], axis=0)
+        except KeyError as e:
+            self.log.error(f"KeyError in plotting detections for {day_of_coverage}: {str(e)}")
+            
 
 
         try:
@@ -1063,7 +1047,11 @@ class G:
 
         md = md.merge(data.nearest_edges, how='left', left_on=IMG_ID, right_on=IMG_ID)
 
-        md.dropna(subset=['osmid'],inplace=True)
+        try:
+            md.dropna(subset=['osmid'],inplace=True)
+        except KeyError as e:
+            self.log.error(f"KeyError in computing density range: {str(e)}")
+            
 
         md[TIME_COL] = md[TIME_COL].dt.floor(delta)
         subsets = md.groupby([TIME_COL])

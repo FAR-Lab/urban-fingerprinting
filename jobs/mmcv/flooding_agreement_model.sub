@@ -1,0 +1,22 @@
+#!/bin/bash 
+#SBATCH -J flooding_agreement_model
+#SBATCH -o /share/ju/urbanECG/log/flooding_agreement_model/%j.out 
+#SBATCH -e /share/ju/urbanECG/log/flooding_agreement_model/%j.err
+#SBATCH --mail-type=ALL 
+#SBATCH --mail-user=mwf62@cornell.edu 
+#SBATCH -N 1
+#SBATCH -n 4
+#SBATCH --get-user-env 
+#SBATCH --mem=32gb
+#SBATCH --gpus=1
+#SBATCH -t 400:00:00 
+#SBATCH --partition=pierson
+
+pwd
+source /home/mwf62/.bashrc
+ 
+source activate /share/ju/conda_virtualenvs/urbanekg.openmmlab
+
+cd /share/ju/urbanECG/static/libraries/mmpretrain
+
+python tools/train.py ../../configs/flooding_agreement_model.py 

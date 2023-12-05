@@ -1,5 +1,7 @@
 
-PROJECT_NAME = "old"
+INSTALL_DIR = "/share/ju/urbanECG"
+
+PROJECT_NAME = "output/street_flooding"
 OUTPUT_DIR = "/share/ju/urbanECG/output"
 
 

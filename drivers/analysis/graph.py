@@ -62,9 +62,11 @@ SUBSET_FLAG = False
 
 if __name__ == "__main__":
     #DoCs = ["2023-09-29"]
-    DoCs = ["2023-10-21", "2023-10-22", "2023-10-23", "2023-10-24", "2023-10-25", "2023-10-26", "2023-10-27"]
+    #DoCs = ["2023-10-21", "2023-10-22", "2023-10-23", "2023-10-24", "2023-10-25", "2023-10-26", "2023-10-27"]
     #DoCs = augDoCs 
-    graph = G(FRAMES_DIR, GRAPHML_DIR, crop=True, crop_id='852a1077fffffff')
+    DoCs = flood
+    #graph = G(FRAMES_DIR, GRAPHML_DIR, crop=True, crop_id='852a1077fffffff')
+    graph = G(FRAMES_DIR, GRAPHML_DIR, crop=False)
     #graph = G(FRAMES_DIR, GRAPHML_DIR)
     graph.toggle_latex_font()
     for day in DoCs:
@@ -76,10 +78,10 @@ if __name__ == "__main__":
     graph.density_over_time_of_day_gif(
         DoCs,
         (
-            datetime.datetime(2023, 10, 29, 0, 0, 0),
-            datetime.datetime(2023, 10, 29, 23, 59, 59),
+            datetime.datetime(2023, 9, 29, 0, 0, 0),
+            datetime.datetime(2023, 9, 29, 23, 59, 59, 999999),
         ),
-        2,
+        class_id=2,
         delta="15min",
         car_offset=True,
     )

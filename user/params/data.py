@@ -24,7 +24,8 @@ IMG_ID = 'frame_id'
 
 # Perspective Settings 
 VIEW_DISTANCE = 100 # feet
-VIEW_CONE = 67.35 # Nexar cameras have 170 diagonal FOV, so cone should be about 168.5/2 degrees
+VIEW_CONE = 67.35 # Nexar cameras have 170 diagonal FOV, 
+                  # so cone should be about 168.5/2 degrees
 
 # 311 Fields 
 ID_COL_311 = 'Unique Key'

@@ -179,13 +179,11 @@ class Frame:
 
     def depicts_coordinates(self, coordinates: tuple):
         # compute angle between self and coordinates
-
         angle = self.angle(coordinates)
 
         # compute difference between angle and heading
         # if difference is within view cone, pass
         # else, fail
-        
         if self.angle_btwn(angle) > VIEW_CONE:
             #print(self.angle_btwn_direction(angle))
             self.log.info(
@@ -196,7 +194,6 @@ class Frame:
         # now, compute distance between self and coordinates
         # if distance is within view distance, pass
         # else, fail
-        
         if self.distance(coordinates) > VIEW_DISTANCE:
             print(self.distance(coordinates))
             self.log.info(

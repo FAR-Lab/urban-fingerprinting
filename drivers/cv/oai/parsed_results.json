@@ -1,0 +1,702 @@
+[
+    {
+        "image":"\/share\/ju\/nexar_data\/training_datasets\/flooding_CLIP_336\/c44d5ae3e8cf34a66a29e3698cead0a9_flooded road_0.5560555458068848",
+        "gpt_classification":" wet road",
+        "id":"c44d5ae3e8cf34a66a29e3698cead0a9",
+        "clip_label":"flooded road",
+        "clip_confidence":"0.5560555458068848"
+    },
+    {
+        "image":"\/share\/ju\/nexar_data\/training_datasets\/flooding_CLIP_336\/918b506c8422a7d0402489b58ac5d7f2_flooded road_0.6940444707870483",
+        "gpt_classification":" wet road",
+        "id":"918b506c8422a7d0402489b58ac5d7f2",
+        "clip_label":"flooded road",
+        "clip_confidence":"0.6940444707870483"
+    },
+    {
+        "image":"\/share\/ju\/nexar_data\/training_datasets\/flooding_CLIP_336\/f7245fe92e868e4382559ea9d81dde58_flooded road_0.559068500995636",
+        "gpt_classification":" wet road",
+        "id":"f7245fe92e868e4382559ea9d81dde58",
+        "clip_label":"flooded road",
+        "clip_confidence":"0.559068500995636"
+    },
+    {
+        "image":"\/share\/ju\/nexar_data\/training_datasets\/flooding_CLIP_336\/d32a409a98fddd654bf0b1216699eb24_flooded road_0.754860520362854",
+        "gpt_classification":" wet road",
+        "id":"d32a409a98fddd654bf0b1216699eb24",
+        "clip_label":"flooded road",
+        "clip_confidence":"0.754860520362854"
+    },
+    {
+        "image":"\/share\/ju\/nexar_data\/training_datasets\/flooding_CLIP_336\/e3aba2e434d782bae0d0f440ce991c54_flooded road_0.7265727519989014",
+        "gpt_classification":" flooded road",
+        "id":"e3aba2e434d782bae0d0f440ce991c54",
+        "clip_label":"flooded road",
+        "clip_confidence":"0.7265727519989014"
+    },
+    {
+        "image":"\/share\/ju\/nexar_data\/training_datasets\/flooding_CLIP_336\/910d723a7b9c367747fe07e2e4064f20_flooded road_0.5176933407783508",
+        "gpt_classification":" flooded road",
+        "id":"910d723a7b9c367747fe07e2e4064f20",
+        "clip_label":"flooded road",
+        "clip_confidence":"0.5176933407783508"
+    },
+    {
+        "image":"\/share\/ju\/nexar_data\/training_datasets\/flooding_CLIP_336\/88afce09c1eafba06bd0d2d122b72728_flooded road_0.7648373246192932",
+        "gpt_classification":" flooded road",
+        "id":"88afce09c1eafba06bd0d2d122b72728",
+        "clip_label":"flooded road",
+        "clip_confidence":"0.7648373246192932"
+    },
+    {
+        "image":"\/share\/ju\/nexar_data\/training_datasets\/flooding_CLIP_336\/3c8e59a6773453c49137d0f58bffe160_flooded road_0.8881375193595886",
+        "gpt_classification":" flooded road",
+        "id":"3c8e59a6773453c49137d0f58bffe160",
+        "clip_label":"flooded road",
+        "clip_confidence":"0.8881375193595886"
+    },
+    {
+        "image":"\/share\/ju\/nexar_data\/training_datasets\/flooding_CLIP_336\/fd91667a7686c8473ad191400481f838_flooded road_0.6931177377700806",
+        "gpt_classification":" wet road",
+        "id":"fd91667a7686c8473ad191400481f838",
+        "clip_label":"flooded road",
+        "clip_confidence":"0.6931177377700806"
+    },
+    {
+        "image":"\/share\/ju\/nexar_data\/training_datasets\/flooding_CLIP_336\/9bef1f97b4b4efcb0ef37e9254896d48_flooded road_0.6523028612136841",
+        "gpt_classification":" flooded road",
+        "id":"9bef1f97b4b4efcb0ef37e9254896d48",
+        "clip_label":"flooded road",
+        "clip_confidence":"0.6523028612136841"
+    },
+    {
+        "image":"\/share\/ju\/nexar_data\/training_datasets\/flooding_CLIP_336\/d4817093adbcdf57349f0bb1bcaf9166_flooded_road_0.6871457695960999",
+        "gpt_classification":" wet road",
+        "id":"d4817093adbcdf57349f0bb1bcaf9166",
+        "clip_label":"flooded road",
+        "clip_confidence":"1.0"
+    },
+    {
+        "image":"\/share\/ju\/nexar_data\/training_datasets\/flooding_CLIP_336\/929219c8acc55d2d9b44f4d14cb784ad_flooded road_0.7115011811256409",
+        "gpt_classification":" wet road",
+        "id":"929219c8acc55d2d9b44f4d14cb784ad",
+        "clip_label":"flooded road",
+        "clip_confidence":"0.7115011811256409"
+    },
+    {
+        "image":"\/share\/ju\/nexar_data\/training_datasets\/flooding_CLIP_336\/6b37b2365c6dca98218f4dc04552ef9f_flooded road_0.5910298228263855",
+        "gpt_classification":" wet road",
+        "id":"6b37b2365c6dca98218f4dc04552ef9f",
+        "clip_label":"flooded road",
+        "clip_confidence":"0.5910298228263855"
+    },
+    {
+        "image":"\/share\/ju\/nexar_data\/training_datasets\/flooding_CLIP_336\/aa762043944f83c521b7afe4b168813e_flooded road_0.6947449445724487",
+        "gpt_classification":" wet road",
+        "id":"aa762043944f83c521b7afe4b168813e",
+        "clip_label":"flooded road",
+        "clip_confidence":"0.6947449445724487"
+    },
+    {
+        "image":"\/share\/ju\/nexar_data\/training_datasets\/flooding_CLIP_336\/4f17b0450304f77fb7dbd2d184c998a9_flooded road_0.8748573064804077",
+        "gpt_classification":" wet road",
+        "id":"4f17b0450304f77fb7dbd2d184c998a9",
+        "clip_label":"flooded road",
+        "clip_confidence":"0.8748573064804077"
+    },
+    {
+        "image":"\/share\/ju\/nexar_data\/training_datasets\/flooding_CLIP_336\/f39fcf8f0f4bbebb8afeddb9202b8d37_flooded road_0.5607601404190063",
+        "gpt_classification":" flooded road",
+        "id":"f39fcf8f0f4bbebb8afeddb9202b8d37",
+        "clip_label":"flooded road",
+        "clip_confidence":"0.5607601404190063"
+    },
+    {
+        "image":"\/share\/ju\/nexar_data\/training_datasets\/flooding_CLIP_336\/dd1f40a684ef221ad4a39ee50aedbadb_flooded road_0.5412770509719849",
+        "gpt_classification":" flooded road",
+        "id":"dd1f40a684ef221ad4a39ee50aedbadb",
+        "clip_label":"flooded road",
+        "clip_confidence":"0.5412770509719849"
+    },
+    {
+        "image":"\/share\/ju\/nexar_data\/training_datasets\/flooding_CLIP_336\/6d006b3f27032beec5d6f62b32006957_flooded road_0.5140048861503601",
+        "gpt_classification":" wet road",
+        "id":"6d006b3f27032beec5d6f62b32006957",
+        "clip_label":"flooded road",
+        "clip_confidence":"0.5140048861503601"
+    },
+    {
+        "image":"\/share\/ju\/nexar_data\/training_datasets\/flooding_CLIP_336\/1f7cc8e3ddd2e1d0aa423846c4e19f2a_flooded road_0.5836639404296875",
+        "gpt_classification":" wet road",
+        "id":"1f7cc8e3ddd2e1d0aa423846c4e19f2a",
+        "clip_label":"flooded road",
+        "clip_confidence":"0.5836639404296875"
+    },
+    {
+        "image":"\/share\/ju\/nexar_data\/training_datasets\/flooding_CLIP_336\/636fee3b241dc497c12faa8aaf398e4d_flooded road_0.8945563435554504",
+        "gpt_classification":" flooded road",
+        "id":"636fee3b241dc497c12faa8aaf398e4d",
+        "clip_label":"flooded road",
+        "clip_confidence":"0.8945563435554504"
+    },
+    {
+        "image":"\/share\/ju\/nexar_data\/training_datasets\/flooding_CLIP_336\/6cac0800c8a6fba93d942bdd8a38337b_flooded road_0.8949272632598877",
+        "gpt_classification":" flooded road",
+        "id":"6cac0800c8a6fba93d942bdd8a38337b",
+        "clip_label":"flooded road",
+        "clip_confidence":"0.8949272632598877"
+    },
+    {
+        "image":"\/share\/ju\/nexar_data\/training_datasets\/flooding_CLIP_336\/dfd93fbda096b430aa5950bb90f523bf_flooded road_0.8521866202354431",
+        "gpt_classification":" flooded road",
+        "id":"dfd93fbda096b430aa5950bb90f523bf",
+        "clip_label":"flooded road",
+        "clip_confidence":"0.8521866202354431"
+    },
+    {
+        "image":"\/share\/ju\/nexar_data\/training_datasets\/flooding_CLIP_336\/a5b5a62b870a00a7e38cdfada4b6c6ed_flooded road_0.5444037318229675",
+        "gpt_classification":" wet road",
+        "id":"a5b5a62b870a00a7e38cdfada4b6c6ed",
+        "clip_label":"flooded road",
+        "clip_confidence":"0.5444037318229675"
+    },
+    {
+        "image":"\/share\/ju\/nexar_data\/training_datasets\/flooding_CLIP_336\/59ea5d3aa4ccaabdec577f02d18b372a_flooded road_0.8416559100151062",
+        "gpt_classification":" wet road",
+        "id":"59ea5d3aa4ccaabdec577f02d18b372a",
+        "clip_label":"flooded road",
+        "clip_confidence":"0.8416559100151062"
+    },
+    {
+        "image":"\/share\/ju\/nexar_data\/training_datasets\/flooding_CLIP_336\/e18469a2290d5f034b1fb1e16836d39d_flooded_road_0.8674785494804382",
+        "gpt_classification":" wet road",
+        "id":"e18469a2290d5f034b1fb1e16836d39d",
+        "clip_label":"flooded road",
+        "clip_confidence":"1.0"
+    },
+    {
+        "image":"\/share\/ju\/nexar_data\/training_datasets\/flooding_CLIP_336\/608c5b0969ce71271c3490364bf6161f_flooded road_0.583437442779541",
+        "gpt_classification":" wet road",
+        "id":"608c5b0969ce71271c3490364bf6161f",
+        "clip_label":"flooded road",
+        "clip_confidence":"0.583437442779541"
+    },
+    {
+        "image":"\/share\/ju\/nexar_data\/training_datasets\/flooding_CLIP_336\/a2bbadb3fb13e95fffe47ab600d7024c_flooded road_0.8105254173278809",
+        "gpt_classification":" wet road",
+        "id":"a2bbadb3fb13e95fffe47ab600d7024c",
+        "clip_label":"flooded road",
+        "clip_confidence":"0.8105254173278809"
+    },
+    {
+        "image":"\/share\/ju\/nexar_data\/training_datasets\/flooding_CLIP_336\/7f658937bbcb5d183b82f6ae3dd26022_flooded road_0.6532006859779358",
+        "gpt_classification":" wet road",
+        "id":"7f658937bbcb5d183b82f6ae3dd26022",
+        "clip_label":"flooded road",
+        "clip_confidence":"0.6532006859779358"
+    },
+    {
+        "image":"\/share\/ju\/nexar_data\/training_datasets\/flooding_CLIP_336\/f8be00c887355b650bff5d70727a8518_flooded road_0.6488529443740845",
+        "gpt_classification":" wet road",
+        "id":"f8be00c887355b650bff5d70727a8518",
+        "clip_label":"flooded road",
+        "clip_confidence":"0.6488529443740845"
+    },
+    {
+        "image":"\/share\/ju\/nexar_data\/training_datasets\/flooding_CLIP_336\/a92e05eaa1eed01d35ab31a438ce8db9_flooded road_0.8570408821105957",
+        "gpt_classification":" flooded road",
+        "id":"a92e05eaa1eed01d35ab31a438ce8db9",
+        "clip_label":"flooded road",
+        "clip_confidence":"0.8570408821105957"
+    },
+    {
+        "image":"\/share\/ju\/nexar_data\/training_datasets\/flooding_CLIP_336\/39ad1cb9ca942a673e17d169f3e2bcd5_flooded road_0.5021315217018127",
+        "gpt_classification":" wet road",
+        "id":"39ad1cb9ca942a673e17d169f3e2bcd5",
+        "clip_label":"flooded road",
+        "clip_confidence":"0.5021315217018127"
+    },
+    {
+        "image":"\/share\/ju\/nexar_data\/training_datasets\/flooding_CLIP_336\/6ccf15a836f9483f4acceace601c1060_flooded road_0.5616411566734314",
+        "gpt_classification":" wet road",
+        "id":"6ccf15a836f9483f4acceace601c1060",
+        "clip_label":"flooded road",
+        "clip_confidence":"0.5616411566734314"
+    },
+    {
+        "image":"\/share\/ju\/nexar_data\/training_datasets\/flooding_CLIP_336\/cad67b130db314bb137926bdbcbf7f96_flooded road_0.5408995747566223",
+        "gpt_classification":" wet road",
+        "id":"cad67b130db314bb137926bdbcbf7f96",
+        "clip_label":"flooded road",
+        "clip_confidence":"0.5408995747566223"
+    },
+    {
+        "image":"\/share\/ju\/nexar_data\/training_datasets\/flooding_CLIP_336\/23543e470e83c3cd2bbe16330d6d2b2e_flooded road_0.7983197569847107",
+        "gpt_classification":" flooded road",
+        "id":"23543e470e83c3cd2bbe16330d6d2b2e",
+        "clip_label":"flooded road",
+        "clip_confidence":"0.7983197569847107"
+    },
+    {
+        "image":"\/share\/ju\/nexar_data\/training_datasets\/flooding_CLIP_336\/edf09a1b9aeb08f97df4253ddc1dc38f_flooded road_0.7744351625442505",
+        "gpt_classification":" wet road",
+        "id":"edf09a1b9aeb08f97df4253ddc1dc38f",
+        "clip_label":"flooded road",
+        "clip_confidence":"0.7744351625442505"
+    },
+    {
+        "image":"\/share\/ju\/nexar_data\/training_datasets\/flooding_CLIP_336\/b31ae4f341ed17a34af2afe728c46c81_flooded road_0.662702739238739",
+        "gpt_classification":" wet road",
+        "id":"b31ae4f341ed17a34af2afe728c46c81",
+        "clip_label":"flooded road",
+        "clip_confidence":"0.662702739238739"
+    },
+    {
+        "image":"\/share\/ju\/nexar_data\/training_datasets\/flooding_CLIP_336\/bc1b6a200552083a941454b844f08651_flooded road_0.9001245498657227",
+        "gpt_classification":" flooded road",
+        "id":"bc1b6a200552083a941454b844f08651",
+        "clip_label":"flooded road",
+        "clip_confidence":"0.9001245498657227"
+    },
+    {
+        "image":"\/share\/ju\/nexar_data\/training_datasets\/flooding_CLIP_336\/295ca76586790854a096fca8a0887693_flooded road_0.5560916662216187",
+        "gpt_classification":" wet road",
+        "id":"295ca76586790854a096fca8a0887693",
+        "clip_label":"flooded road",
+        "clip_confidence":"0.5560916662216187"
+    },
+    {
+        "image":"\/share\/ju\/nexar_data\/training_datasets\/flooding_CLIP_336\/70850ba78212b6ac97275d790a0b4fd1_flooded road_0.608296811580658",
+        "gpt_classification":" wet road",
+        "id":"70850ba78212b6ac97275d790a0b4fd1",
+        "clip_label":"flooded road",
+        "clip_confidence":"0.608296811580658"
+    },
+    {
+        "image":"\/share\/ju\/nexar_data\/training_datasets\/flooding_CLIP_336\/c8031d0dbbd017a872e86ab708832da7_flooded road_0.6691120862960815",
+        "gpt_classification":" wet road",
+        "id":"c8031d0dbbd017a872e86ab708832da7",
+        "clip_label":"flooded road",
+        "clip_confidence":"0.6691120862960815"
+    },
+    {
+        "image":"\/share\/ju\/nexar_data\/training_datasets\/flooding_CLIP_336\/326d9008eec08f7ceb659f3fab6b4472_flooded road_0.5442488193511963",
+        "gpt_classification":" wet road",
+        "id":"326d9008eec08f7ceb659f3fab6b4472",
+        "clip_label":"flooded road",
+        "clip_confidence":"0.5442488193511963"
+    },
+    {
+        "image":"\/share\/ju\/nexar_data\/training_datasets\/flooding_CLIP_336\/576eac516246a58b69a6ef4e645c880c_flooded road_0.6257725358009338",
+        "gpt_classification":" wet road",
+        "id":"576eac516246a58b69a6ef4e645c880c",
+        "clip_label":"flooded road",
+        "clip_confidence":"0.6257725358009338"
+    },
+    {
+        "image":"\/share\/ju\/nexar_data\/training_datasets\/flooding_CLIP_336\/93a66b01ee965e0ba72a54ba2b14aca3_flooded road_0.9172385334968567",
+        "gpt_classification":" flooded road",
+        "id":"93a66b01ee965e0ba72a54ba2b14aca3",
+        "clip_label":"flooded road",
+        "clip_confidence":"0.9172385334968567"
+    },
+    {
+        "image":"\/share\/ju\/nexar_data\/training_datasets\/flooding_CLIP_336\/bb7378d3d2da9d03271fdcf86130c3f1_flooded road_0.5464681386947632",
+        "gpt_classification":" wet road",
+        "id":"bb7378d3d2da9d03271fdcf86130c3f1",
+        "clip_label":"flooded road",
+        "clip_confidence":"0.5464681386947632"
+    },
+    {
+        "image":"\/share\/ju\/nexar_data\/training_datasets\/flooding_CLIP_336\/33817ef1174295da3192684b0cee564d_flooded road_0.9566611647605896",
+        "gpt_classification":" flooded road",
+        "id":"33817ef1174295da3192684b0cee564d",
+        "clip_label":"flooded road",
+        "clip_confidence":"0.9566611647605896"
+    },
+    {
+        "image":"\/share\/ju\/nexar_data\/training_datasets\/flooding_CLIP_336\/c63f4a5c7d833540c4827524be035478_flooded road_0.6331762075424194",
+        "gpt_classification":" flooded road",
+        "id":"c63f4a5c7d833540c4827524be035478",
+        "clip_label":"flooded road",
+        "clip_confidence":"0.6331762075424194"
+    },
+    {
+        "image":"\/share\/ju\/nexar_data\/training_datasets\/flooding_CLIP_336\/1e2b50bb2aa62579fcacfffc767e8c71_flooded road_0.9142608046531677",
+        "gpt_classification":" flooded road",
+        "id":"1e2b50bb2aa62579fcacfffc767e8c71",
+        "clip_label":"flooded road",
+        "clip_confidence":"0.9142608046531677"
+    },
+    {
+        "image":"\/share\/ju\/nexar_data\/training_datasets\/flooding_CLIP_336\/caf5dc1c3bf847fa0a741c880b7ac497_flooded road_0.9617583155632019",
+        "gpt_classification":" flooded road",
+        "id":"caf5dc1c3bf847fa0a741c880b7ac497",
+        "clip_label":"flooded road",
+        "clip_confidence":"0.9617583155632019"
+    },
+    {
+        "image":"\/share\/ju\/nexar_data\/training_datasets\/flooding_CLIP_336\/cabb6a0862c1614034d7cf669244bf52_flooded road_0.9323918223381042",
+        "gpt_classification":" flooded road",
+        "id":"cabb6a0862c1614034d7cf669244bf52",
+        "clip_label":"flooded road",
+        "clip_confidence":"0.9323918223381042"
+    },
+    {
+        "image":"\/share\/ju\/nexar_data\/training_datasets\/flooding_CLIP_336\/1a0b8cd917be843433a9cd80c1bfb35e_flooded road_0.8871423602104187",
+        "gpt_classification":" flooded road",
+        "id":"1a0b8cd917be843433a9cd80c1bfb35e",
+        "clip_label":"flooded road",
+        "clip_confidence":"0.8871423602104187"
+    },
+    {
+        "image":"\/share\/ju\/nexar_data\/training_datasets\/flooding_CLIP_336\/f33ed27fd619fb9a62542bb5a0e5b315_flooded road_0.5795642137527466",
+        "gpt_classification":" flooded road",
+        "id":"f33ed27fd619fb9a62542bb5a0e5b315",
+        "clip_label":"flooded road",
+        "clip_confidence":"0.5795642137527466"
+    },
+    {
+        "image":"\/share\/ju\/nexar_data\/training_datasets\/flooding_CLIP_336\/8d974d5c7b3da5f93bc9d777a6cc4d14_flooded road_0.6919510364532471",
+        "gpt_classification":" wet road",
+        "id":"8d974d5c7b3da5f93bc9d777a6cc4d14",
+        "clip_label":"flooded road",
+        "clip_confidence":"0.6919510364532471"
+    },
+    {
+        "image":"\/share\/ju\/nexar_data\/training_datasets\/flooding_CLIP_336\/f7d98b47b1739cf97ebb5db4ef246b03_flooded road_0.7357369661331177",
+        "gpt_classification":" wet road",
+        "id":"f7d98b47b1739cf97ebb5db4ef246b03",
+        "clip_label":"flooded road",
+        "clip_confidence":"0.7357369661331177"
+    },
+    {
+        "image":"\/share\/ju\/nexar_data\/training_datasets\/flooding_CLIP_336\/9e7cf29e54cab5da80b2c4fdc983bc91_flooded road_0.865083634853363",
+        "gpt_classification":" flooded road",
+        "id":"9e7cf29e54cab5da80b2c4fdc983bc91",
+        "clip_label":"flooded road",
+        "clip_confidence":"0.865083634853363"
+    },
+    {
+        "image":"\/share\/ju\/nexar_data\/training_datasets\/flooding_CLIP_336\/1b835cfebbd2bcf30ed4bbad0ec6d29b_flooded road_0.7453542947769165",
+        "gpt_classification":" wet road",
+        "id":"1b835cfebbd2bcf30ed4bbad0ec6d29b",
+        "clip_label":"flooded road",
+        "clip_confidence":"0.7453542947769165"
+    },
+    {
+        "image":"\/share\/ju\/nexar_data\/training_datasets\/flooding_CLIP_336\/109d5e9f6d11aaa46446ffa6f6913744_flooded road_0.9091373682022095",
+        "gpt_classification":" flooded road",
+        "id":"109d5e9f6d11aaa46446ffa6f6913744",
+        "clip_label":"flooded road",
+        "clip_confidence":"0.9091373682022095"
+    },
+    {
+        "image":"\/share\/ju\/nexar_data\/training_datasets\/flooding_CLIP_336\/b4a8321d1fabc6413bb8c3528918f633_flooded road_0.5176947712898254",
+        "gpt_classification":" flooded road",
+        "id":"b4a8321d1fabc6413bb8c3528918f633",
+        "clip_label":"flooded road",
+        "clip_confidence":"0.5176947712898254"
+    },
+    {
+        "image":"\/share\/ju\/nexar_data\/training_datasets\/flooding_CLIP_336\/d22b3066a3d633c8fdc95ea2b988a257_flooded road_0.6934109330177307",
+        "gpt_classification":" wet road",
+        "id":"d22b3066a3d633c8fdc95ea2b988a257",
+        "clip_label":"flooded road",
+        "clip_confidence":"0.6934109330177307"
+    },
+    {
+        "image":"\/share\/ju\/nexar_data\/training_datasets\/flooding_CLIP_336\/42d91f39167b968bca36d8b1397496c0_flooded road_0.9163283109664917",
+        "gpt_classification":" flooded road",
+        "id":"42d91f39167b968bca36d8b1397496c0",
+        "clip_label":"flooded road",
+        "clip_confidence":"0.9163283109664917"
+    },
+    {
+        "image":"\/share\/ju\/nexar_data\/training_datasets\/flooding_CLIP_336\/1c9d67033499ba39a92fc865a25bf796_flooded road_0.5096477270126343",
+        "gpt_classification":" wet road",
+        "id":"1c9d67033499ba39a92fc865a25bf796",
+        "clip_label":"flooded road",
+        "clip_confidence":"0.5096477270126343"
+    },
+    {
+        "image":"\/share\/ju\/nexar_data\/training_datasets\/flooding_CLIP_336\/ba44dac13d1f2af756adea0607ae0461_flooded road_0.5620851516723633",
+        "gpt_classification":" wet road",
+        "id":"ba44dac13d1f2af756adea0607ae0461",
+        "clip_label":"flooded road",
+        "clip_confidence":"0.5620851516723633"
+    },
+    {
+        "image":"\/share\/ju\/nexar_data\/training_datasets\/flooding_CLIP_336\/b6c3fa420cb8cd9ad330ff20a57f832a_flooded road_0.507534921169281",
+        "gpt_classification":" wet road",
+        "id":"b6c3fa420cb8cd9ad330ff20a57f832a",
+        "clip_label":"flooded road",
+        "clip_confidence":"0.507534921169281"
+    },
+    {
+        "image":"\/share\/ju\/nexar_data\/training_datasets\/flooding_CLIP_336\/55dd21134f3b2f26bf7237d40a8fed7a_flooded road_0.5753854513168335",
+        "gpt_classification":" wet road",
+        "id":"55dd21134f3b2f26bf7237d40a8fed7a",
+        "clip_label":"flooded road",
+        "clip_confidence":"0.5753854513168335"
+    },
+    {
+        "image":"\/share\/ju\/nexar_data\/training_datasets\/flooding_CLIP_336\/cf69bc28eed95c059cf1d22417039c0b_flooded road_0.9296855926513672",
+        "gpt_classification":" flooded road",
+        "id":"cf69bc28eed95c059cf1d22417039c0b",
+        "clip_label":"flooded road",
+        "clip_confidence":"0.9296855926513672"
+    },
+    {
+        "image":"\/share\/ju\/nexar_data\/training_datasets\/flooding_CLIP_336\/150867a5d0a0de37faedb37f2f4bb28f_flooded road_0.5160220861434937",
+        "gpt_classification":" flooded road",
+        "id":"150867a5d0a0de37faedb37f2f4bb28f",
+        "clip_label":"flooded road",
+        "clip_confidence":"0.5160220861434937"
+    },
+    {
+        "image":"\/share\/ju\/nexar_data\/training_datasets\/flooding_CLIP_336\/a436f41488b826b4363f56b6b36580fc_flooded road_0.641346275806427",
+        "gpt_classification":" wet road",
+        "id":"a436f41488b826b4363f56b6b36580fc",
+        "clip_label":"flooded road",
+        "clip_confidence":"0.641346275806427"
+    },
+    {
+        "image":"\/share\/ju\/nexar_data\/training_datasets\/flooding_CLIP_336\/8d38d0e98c515413abe7cd519ef50c20_flooded road_0.827561616897583",
+        "gpt_classification":" wet road",
+        "id":"8d38d0e98c515413abe7cd519ef50c20",
+        "clip_label":"flooded road",
+        "clip_confidence":"0.827561616897583"
+    },
+    {
+        "image":"\/share\/ju\/nexar_data\/training_datasets\/flooding_CLIP_336\/3b9b2e64874a671195038918a5e8194b_flooded road_0.8758862614631653",
+        "gpt_classification":" wet road",
+        "id":"3b9b2e64874a671195038918a5e8194b",
+        "clip_label":"flooded road",
+        "clip_confidence":"0.8758862614631653"
+    },
+    {
+        "image":"\/share\/ju\/nexar_data\/training_datasets\/flooding_CLIP_336\/02b276a1c7439f874f0c93a102bbe6f6_flooded road_0.7649262547492981",
+        "gpt_classification":" wet road",
+        "id":"02b276a1c7439f874f0c93a102bbe6f6",
+        "clip_label":"flooded road",
+        "clip_confidence":"0.7649262547492981"
+    },
+    {
+        "image":"\/share\/ju\/nexar_data\/training_datasets\/flooding_CLIP_336\/0d04e632085132e3a0e9be113338b6d4_flooded road_0.8741313815116882",
+        "gpt_classification":" flooded road",
+        "id":"0d04e632085132e3a0e9be113338b6d4",
+        "clip_label":"flooded road",
+        "clip_confidence":"0.8741313815116882"
+    },
+    {
+        "image":"\/share\/ju\/nexar_data\/training_datasets\/flooding_CLIP_336\/a97e467acf06a53595f5fc1a1c29d060_flooded road_0.6880883574485779",
+        "gpt_classification":" wet road",
+        "id":"a97e467acf06a53595f5fc1a1c29d060",
+        "clip_label":"flooded road",
+        "clip_confidence":"0.6880883574485779"
+    },
+    {
+        "image":"\/share\/ju\/nexar_data\/training_datasets\/flooding_CLIP_336\/4953db3693381888f8245a380ae3e2b7_flooded road_0.693985641002655",
+        "gpt_classification":" wet road",
+        "id":"4953db3693381888f8245a380ae3e2b7",
+        "clip_label":"flooded road",
+        "clip_confidence":"0.693985641002655"
+    },
+    {
+        "image":"\/share\/ju\/nexar_data\/training_datasets\/flooding_CLIP_336\/32e19a8239647548f833f022bf63d2cc_flooded road_0.8414381146430969",
+        "gpt_classification":" wet road",
+        "id":"32e19a8239647548f833f022bf63d2cc",
+        "clip_label":"flooded road",
+        "clip_confidence":"0.8414381146430969"
+    },
+    {
+        "image":"\/share\/ju\/nexar_data\/training_datasets\/flooding_CLIP_336\/ac99f9eeb8be683e2e1449a93982f133_flooded road_0.567035973072052",
+        "gpt_classification":" wet road",
+        "id":"ac99f9eeb8be683e2e1449a93982f133",
+        "clip_label":"flooded road",
+        "clip_confidence":"0.567035973072052"
+    },
+    {
+        "image":"\/share\/ju\/nexar_data\/training_datasets\/flooding_CLIP_336\/01997eff3eb75697a01bb37dd14f6221_flooded road_0.5508145689964294",
+        "gpt_classification":" wet road",
+        "id":"01997eff3eb75697a01bb37dd14f6221",
+        "clip_label":"flooded road",
+        "clip_confidence":"0.5508145689964294"
+    },
+    {
+        "image":"\/share\/ju\/nexar_data\/training_datasets\/flooding_CLIP_336\/e1771e78c3ed30a35b8d5d69f218fff0_flooded road_0.5534698367118835",
+        "gpt_classification":" wet road",
+        "id":"e1771e78c3ed30a35b8d5d69f218fff0",
+        "clip_label":"flooded road",
+        "clip_confidence":"0.5534698367118835"
+    },
+    {
+        "image":"\/share\/ju\/nexar_data\/training_datasets\/flooding_CLIP_336\/a9d2cc55a821d5a763a57ca708089c88_flooded road_0.5302484631538391",
+        "gpt_classification":" wet road",
+        "id":"a9d2cc55a821d5a763a57ca708089c88",
+        "clip_label":"flooded road",
+        "clip_confidence":"0.5302484631538391"
+    },
+    {
+        "image":"\/share\/ju\/nexar_data\/training_datasets\/flooding_CLIP_336\/dec41c7c7a9139d0d64947408d2d108d_flooded road_0.6921601891517639",
+        "gpt_classification":" wet road",
+        "id":"dec41c7c7a9139d0d64947408d2d108d",
+        "clip_label":"flooded road",
+        "clip_confidence":"0.6921601891517639"
+    },
+    {
+        "image":"\/share\/ju\/nexar_data\/training_datasets\/flooding_CLIP_336\/90a2f8237be6b74b0d7ed06885317782_flooded road_0.7885322570800781",
+        "gpt_classification":" wet road",
+        "id":"90a2f8237be6b74b0d7ed06885317782",
+        "clip_label":"flooded road",
+        "clip_confidence":"0.7885322570800781"
+    },
+    {
+        "image":"\/share\/ju\/nexar_data\/training_datasets\/flooding_CLIP_336\/217610c5a3a72d4101f23f8b6447e1a8_flooded road_0.8051103949546814",
+        "gpt_classification":" flooded road",
+        "id":"217610c5a3a72d4101f23f8b6447e1a8",
+        "clip_label":"flooded road",
+        "clip_confidence":"0.8051103949546814"
+    },
+    {
+        "image":"\/share\/ju\/nexar_data\/training_datasets\/flooding_CLIP_336\/326d9008eec08f7ceb659f3fab6b4472_flooded road_0.5442488193511963",
+        "gpt_classification":" wet road",
+        "id":"326d9008eec08f7ceb659f3fab6b4472",
+        "clip_label":"flooded road",
+        "clip_confidence":"0.5442488193511963"
+    },
+    {
+        "image":"\/share\/ju\/nexar_data\/training_datasets\/flooding_CLIP_336\/379006753c5c00610e4a06fcf49262f9_flooded road_0.6268455982208252",
+        "gpt_classification":" wet road",
+        "id":"379006753c5c00610e4a06fcf49262f9",
+        "clip_label":"flooded road",
+        "clip_confidence":"0.6268455982208252"
+    },
+    {
+        "image":"\/share\/ju\/nexar_data\/training_datasets\/flooding_CLIP_336\/05c4142027eaf61f27db02bdb2205fd6_flooded road_0.7206221222877502",
+        "gpt_classification":" flooded road",
+        "id":"05c4142027eaf61f27db02bdb2205fd6",
+        "clip_label":"flooded road",
+        "clip_confidence":"0.7206221222877502"
+    },
+    {
+        "image":"\/share\/ju\/nexar_data\/training_datasets\/flooding_CLIP_336\/fb8940132c969e9ac46e3d57f9d1d947_flooded road_0.7112128734588623",
+        "gpt_classification":" flooded road",
+        "id":"fb8940132c969e9ac46e3d57f9d1d947",
+        "clip_label":"flooded road",
+        "clip_confidence":"0.7112128734588623"
+    },
+    {
+        "image":"\/share\/ju\/nexar_data\/training_datasets\/flooding_CLIP_336\/f50c68a0414a5811079cde089db0d4ad_flooded road_0.5423581004142761",
+        "gpt_classification":" flooded road",
+        "id":"f50c68a0414a5811079cde089db0d4ad",
+        "clip_label":"flooded road",
+        "clip_confidence":"0.5423581004142761"
+    },
+    {
+        "image":"\/share\/ju\/nexar_data\/training_datasets\/flooding_CLIP_336\/d9d1352b50d4ba07c95b89e0813d2d99_flooded road_0.5131475925445557",
+        "gpt_classification":" wet road",
+        "id":"d9d1352b50d4ba07c95b89e0813d2d99",
+        "clip_label":"flooded road",
+        "clip_confidence":"0.5131475925445557"
+    },
+    {
+        "image":"\/share\/ju\/nexar_data\/training_datasets\/flooding_CLIP_336\/408da20a680bf6a3cdc5c314d9d78cd6_flooded road_0.7245340943336487",
+        "gpt_classification":" flooded road",
+        "id":"408da20a680bf6a3cdc5c314d9d78cd6",
+        "clip_label":"flooded road",
+        "clip_confidence":"0.7245340943336487"
+    },
+    {
+        "image":"\/share\/ju\/nexar_data\/training_datasets\/flooding_CLIP_336\/1ca199e528346beec28318a097b19c32_flooded road_0.9609067440032959",
+        "gpt_classification":" wet road",
+        "id":"1ca199e528346beec28318a097b19c32",
+        "clip_label":"flooded road",
+        "clip_confidence":"0.9609067440032959"
+    },
+    {
+        "image":"\/share\/ju\/nexar_data\/training_datasets\/flooding_CLIP_336\/a505ab5121f36765b3bd8be003120da2_flooded road_0.5267037153244019",
+        "gpt_classification":" wet road",
+        "id":"a505ab5121f36765b3bd8be003120da2",
+        "clip_label":"flooded road",
+        "clip_confidence":"0.5267037153244019"
+    },
+    {
+        "image":"\/share\/ju\/nexar_data\/training_datasets\/flooding_CLIP_336\/023cbdedb5a00df4c75ada5c4b66577a_flooded road_0.8306798338890076",
+        "gpt_classification":" flooded road",
+        "id":"023cbdedb5a00df4c75ada5c4b66577a",
+        "clip_label":"flooded road",
+        "clip_confidence":"0.8306798338890076"
+    },
+    {
+        "image":"\/share\/ju\/nexar_data\/training_datasets\/flooding_CLIP_336\/43b0eeda1a30c0c081bbd24a3a6919f9_flooded road_0.7324916124343872",
+        "gpt_classification":" wet road",
+        "id":"43b0eeda1a30c0c081bbd24a3a6919f9",
+        "clip_label":"flooded road",
+        "clip_confidence":"0.7324916124343872"
+    },
+    {
+        "image":"\/share\/ju\/nexar_data\/training_datasets\/flooding_CLIP_336\/7b6b2c5a6e1fcb58bec23a3826e0fdbd_flooded road_0.8474447131156921",
+        "gpt_classification":" wet road",
+        "id":"7b6b2c5a6e1fcb58bec23a3826e0fdbd",
+        "clip_label":"flooded road",
+        "clip_confidence":"0.8474447131156921"
+    },
+    {
+        "image":"\/share\/ju\/nexar_data\/training_datasets\/flooding_CLIP_336\/d18be282f3a5990bde31296d7715da01_flooded road_0.6288127303123474",
+        "gpt_classification":" wet road",
+        "id":"d18be282f3a5990bde31296d7715da01",
+        "clip_label":"flooded road",
+        "clip_confidence":"0.6288127303123474"
+    },
+    {
+        "image":"\/share\/ju\/nexar_data\/training_datasets\/flooding_CLIP_336\/a27523f73498c608c1ae8a353a1f1377_flooded road_0.7932374477386475",
+        "gpt_classification":" wet road",
+        "id":"a27523f73498c608c1ae8a353a1f1377",
+        "clip_label":"flooded road",
+        "clip_confidence":"0.7932374477386475"
+    },
+    {
+        "image":"\/share\/ju\/nexar_data\/training_datasets\/flooding_CLIP_336\/0ddf7965350aeea0c07ba98e7147d2c7_flooded road_0.6467779278755188",
+        "gpt_classification":" wet road",
+        "id":"0ddf7965350aeea0c07ba98e7147d2c7",
+        "clip_label":"flooded road",
+        "clip_confidence":"0.6467779278755188"
+    },
+    {
+        "image":"\/share\/ju\/nexar_data\/training_datasets\/flooding_CLIP_336\/216de5e8dbcd56055be5cf7a16d6098c_flooded road_0.8291049003601074",
+        "gpt_classification":" wet road",
+        "id":"216de5e8dbcd56055be5cf7a16d6098c",
+        "clip_label":"flooded road",
+        "clip_confidence":"0.8291049003601074"
+    },
+    {
+        "image":"\/share\/ju\/nexar_data\/training_datasets\/flooding_CLIP_336\/e422d7a80e4ef0d1396d43369f44838c_flooded road_0.5640745162963867",
+        "gpt_classification":" flooded road",
+        "id":"e422d7a80e4ef0d1396d43369f44838c",
+        "clip_label":"flooded road",
+        "clip_confidence":"0.5640745162963867"
+    },
+    {
+        "image":"\/share\/ju\/nexar_data\/training_datasets\/flooding_CLIP_336\/3bd9e40f0e4e6a7ce570879a72fa8d5f_flooded road_0.6038592457771301",
+        "gpt_classification":" wet road",
+        "id":"3bd9e40f0e4e6a7ce570879a72fa8d5f",
+        "clip_label":"flooded road",
+        "clip_confidence":"0.6038592457771301"
+    },
+    {
+        "image":"\/share\/ju\/nexar_data\/training_datasets\/flooding_CLIP_336\/0c8b6438f04cd4bbb53cd67cae511bfe_flooded road_0.8943274617195129",
+        "gpt_classification":" flooded road",
+        "id":"0c8b6438f04cd4bbb53cd67cae511bfe",
+        "clip_label":"flooded road",
+        "clip_confidence":"0.8943274617195129"
+    },
+    {
+        "image":"\/share\/ju\/nexar_data\/training_datasets\/flooding_CLIP_336\/a82b07f19e5dce36ccbdc6d448c1a7a0_flooded road_0.5593495965003967",
+        "gpt_classification":" wet road",
+        "id":"a82b07f19e5dce36ccbdc6d448c1a7a0",
+        "clip_label":"flooded road",
+        "clip_confidence":"0.5593495965003967"
+    }
+]

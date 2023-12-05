@@ -13,3 +13,6 @@
 [submodule "static/libraries/mmsegmentation"]
 	path = static/libraries/mmsegmentation
 	url = git@github.com:open-mmlab/mmsegmentation.git
+[submodule "static/libraries/mmpretrain"]
+	path = static/libraries/mmpretrain
+	url = git@github.com:open-mmlab/mmpretrain.git

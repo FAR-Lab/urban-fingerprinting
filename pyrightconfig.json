@@ -1,26 +1,12 @@
 {
-    "include": [
-        "src/analysis",
-        "drivers", 
-        "src/cv/*.py",
-        "notebooks/*.ipynb",
-        "src/utils/*.py",
-        "src/processing/",
-        "src/visualization"
-    ],
-    
     "exclude": [
-        "output",
-        "src/utils/data_pull/output",
-        "notebooks/output",
-        "data",
-        "src/cv/fastsam_weights",
-        "src/cv/yolov7_weights",
-        "src/cv/traced_model.pt",
-        "drivers/cv/fastsam_weights",
-        "src/test/output",
-        "log",
-        "notebooks/*",
-        "training_datasets"
-  ]
+        "output/",
+        "data/",
+        "static/",
+        "training_datasets",
+        "**/output",
+        "src/cv/FastSAM",
+        "src/cv/yolov7",
+        "src/cv/LAVIS",
+      ],
 }

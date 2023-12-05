@@ -120,6 +120,7 @@ class YOLO_Detector:
 
         return files_list
 
+
     def create_batch_symlinks(self, frames_path_lists, frames_list_path):
         batch_paths = []
         for frames_list in tqdm(
@@ -154,7 +155,7 @@ class YOLO_Detector:
         )
         async with self.semaphores[gpu_id]:
             try:
-                detect_cmd = f"python {self.YOLO_DIR}/detect.py --weights {self.YOLO_WEIGHTS} --source  {frames_list_path} --save-txt --save-conf --project {self.OUTPUT_DIR}/{self.DAY_OF_COVERAGE}/{worker_id}  --device {gpu_id} --img-size 1280 --nosave --conf-thres 0.5 --augment"
+                detect_cmd = f"python {self.YOLO_DIR}/detect.py --weights {self.YOLO_WEIGHTS} --source  {frames_list_path} --save-txt --save-conf --project {self.OUTPUT_DIR}/{self.DAY_OF_COVERAGE}/{worker_id}  --device {gpu_id} --img-size 1280 --nosave --conf-thres 0.001 --augment"
                 detect_cmd = shlex.split(detect_cmd)
                 print(detect_cmd)
                 proc = await asyncio.create_subprocess_exec(*detect_cmd)

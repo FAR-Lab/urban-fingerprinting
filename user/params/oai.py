@@ -13,9 +13,9 @@ def make_headers(api_key):
     return headers
 
 
-def make_payload(img_b64, img_path, text="Classify this image into one of four categories: flooded road, wet road, dry road, no road shown.", model="gpt-4-vision-preview", max_tokens=300):
+def make_payload(img_b64, img_path, text="Classify this image into one of four categories: flooded road, wet road, dry road, no road shown. The image is letterboxed; ignore the black boxes across its top and bottom.", model="gpt-4-vision-preview", max_tokens=450):
 
-    text += f"Return the result in JSON format, with key {os.path.splitext(os.path.basename(img_path))[0]} and value as the classification."
+    text += f"Return the result in JSON format, with key {img_path} and value as the classification."
      
     payload = {
         "model": f"{model}",

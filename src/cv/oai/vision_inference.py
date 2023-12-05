@@ -58,13 +58,19 @@ class OAI_Session:
         await self._session.close()
     
     async def __post(self, url, headers, payload): 
+        try: 
+            async with self._session.request("POST", url, headers=headers, json=payload) as response: 
+                #print(await response.json())
+                response.raise_for_status()
+                
+                #print(response.json)
+                #print(response.status)
+                return await response.json()
+        except Exception as e: 
+            self.log.error(f"Error in POST request: {e}")
+
         
-        async with self._session.request("POST", url, headers=headers, json=payload) as response: 
-            print(await response.json())
-            response.raise_for_status()
-            print(response.json)
-            print(response.status)
-            return await response.json()
+
         
 
     async def __encode_image(self, image_path): 
@@ -77,14 +83,19 @@ class OAI_Session:
         self.headers["Authorization"] = f"Bearer {self.api_key}"
         self.log.success("Updated headers.")
     
-    async def infer_image(self, img_path): 
+    async def infer_image(self, img_path, outfile="flooding_gptv.json"): 
         encoded_image = await self.__encode_image(img_path)
-        payload = make_payload(encoded_image)
+        payload = make_payload(encoded_image, img_path)
         
-        return await self.__post(VISION_URL, self.headers, payload)
+        response =  await self.__post(VISION_URL, self.headers, payload)
+
+        # write response to file async
+        async with aiofiles.open(outfile, mode="a") as f: 
+            await f.write(json.dumps(response) + "\n")
+
     
-    async def infer_images(self, img_paths):
-        tasks = [self.__post_image(img_path) for img_path in img_paths]
+    async def infer_images(self, img_paths, outfile="flooding_gptv.json"):
+        tasks = [self.infer_image(img_path, outfile) for img_path in img_paths]
         return await asyncio.gather(*tasks)
 
         
