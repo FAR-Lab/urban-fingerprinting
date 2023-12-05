@@ -21,6 +21,10 @@ TZ = 'America/New_York'
 
 IMG_ID = 'frame_id'
 
+QUALITY = 'frame_quality'
+LIGHT = 'frame_context'
+
+STOCK_H3 = 'h3_index_res06'
 
 # Perspective Settings 
 VIEW_DISTANCE = 100 # feet
