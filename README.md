@@ -3,9 +3,11 @@ This repo contains FARLAB's code and materials on ongoing work with the idea of 
 
 This work is supported by Nexar Inc., who provides the anonymized dashboard camera image data that we work with. 
 
+## Highlights 
+| [Police Deployments](docs/highlights/nypd.md) | [Scaffolding Permits](docs/highlights/nyc_scaffolding.md) | [Street Flooding](docs/highlights/nyc_street_flooding.md) |
+| ---------------------  | ---------------------   | ---------------------  |
 
-## Scaffolding Distribution 
-[Link to download model weights](https://cornell.box.com/s/xa8ebepv8d6875q0ey46fz2kyxc51xb5)
+
 
 
 ## Policing Deployments 
