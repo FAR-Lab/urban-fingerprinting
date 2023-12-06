@@ -16,7 +16,11 @@ import torch
 
 from utils.logger import setup_logger
 
-from src.cv.FastSAM.fastsam import FastSAM, FastSAMPrompt
+#from src.cv.FastSAM.fastsam import FastSAM, FastSAMPrompt
+
+from segment_anything import SamPredictor, sam_model_registry
+
+
 import numpy as np
 import cv2
 
@@ -26,27 +30,44 @@ import glob
 class BackgroundRemover:
     def __init__(self):
         self.log = setup_logger()
+        self.log.setLevel("INFO")
+
         self.log.info("Initializing BackgroundRemover...")
         self.log.info("BackgroundRemover initialized.")
-        self.model = FastSAM("./fastsam_weights/FastSAM-x.pt")
         self.device = "cuda" if torch.cuda.is_available() else "cpu"
+
+        self.model = sam_model_registry["vit_h"](checkpoint='../../static/models/samhq/sam_hq_vit_h.pth')
+        self.model.to(self.device)
+
+        self.predictor = SamPredictor(self.model)
+
+        self.hq_token_only = True # set to false when images typically have multiple objects
+
+        self.output_dir = './'
+
+
 
     def segment_background(self, image_path):
         img = cv2.imread(image_path)
+        #img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
         # get width and height of image
         height, width = img.shape[:2]
-        results = self.model(
-            image_path,
-            device=self.device,
-            retina_masks=True,
-            imgsz=max(height, width),
-            conf=0.5,
-            iou=0.75,
-        )
-        prompt_process = FastSAMPrompt(image_path, results, device=self.device)
 
-        # get the background mask
-        ann = prompt_process.text_prompt(text="a person")
+        # point_coords (np.ndarray or None): A Nx2 array of point prompts to the
+        #    model. Each point is in (X,Y) in pixels.
+        # point_labels (np.ndarray or None): A length N array of labels for the
+        #   point prompts. 1 indicates a foreground point and 0 indicates a
+        #    background point.
+
+        pcs = np.array([[0, 0], [width, 0], [0, height], [width, height], [0, height/2], [width, height/2], [width / 2, height / 2], [width / 2, height*0.1], [width / 2, height*0.9]])
+        pls = np.array([0, 0, 0, 0, 0, 0, 1, 1, 1])
+
+        self.predictor.set_image(img)
+        masks, _, _ = self.predictor.predict(point_coords=pcs, point_labels=pls, hq_token_only=self.hq_token_only, multimask_output=False)
+
+        ann = masks
+
+
         # convert ann to a binary mask
         mask = np.zeros((height, width), dtype=np.uint8)
         for a in ann:

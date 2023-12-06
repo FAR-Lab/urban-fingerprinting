@@ -32,8 +32,9 @@ class InspectionMap:
             location=center, zoom_start=14, control_scale=True
         )
         self.frames_group = folium.FeatureGroup(name="Nexar Frames")
+        self.sensors_group = folium.FeatureGroup(name="FloodNet Sensors")
         self.complaints_groups = {}
-        self.debug = True
+        self.debug = False
 
     def init_complaint_group(self, name):
         try:
@@ -44,6 +45,8 @@ class InspectionMap:
     def save(self, path):
         # add frame group to map
         self.map.add_child(self.frames_group)
+        # add sensor group to map
+        self.map.add_child(self.sensors_group)
 
         # add complaints groups to map
         for group in self.complaints_groups.values():
@@ -143,6 +146,42 @@ class InspectionMap:
                 f"Failed to add frame marker for frame {frame[IMG_ID]}: {e}"
             )
             return
+        
+    def add_floodnet_marker(self, sensor): 
+        try:
+            popup_html = f"""
+                <div style="width: 640px; height: 420px; overflow: hidden;">
+                    <div id="sensor_info"> 
+                        <table> 
+                        <tr>
+                            <td><b>Sensor ID:</b></td>
+                            <td>{sensor["deployment_id"]}</td>
+                        </tr>
+                        </table>
+            """
+        except Exception as e:
+            self.log.error(
+                f"Failed to generate popup HTML for sensor {sensor['deployment_id']}: {e}"
+            )
+            return
+        
+        try: 
+            self.sensors_group.add_child(
+                folium.Marker(
+                    location=[sensor["lat"], sensor["lon"]],
+                    popup=folium.Popup(popup_html, max_width=640),
+                    icon=folium.Icon(
+                        color="purple", icon="tint", prefix="fa"
+                    ),
+                )
+            )
+
+            self.log.success(f"Added sensor {sensor.deployment_id} to map")  
+        except Exception as e:
+            self.log.error(
+                f"Failed to add sensor marker for sensor {sensor['deployment_id']}: {e}"
+            )
+            
 
 
     def add_311_marker(self, complaint):
