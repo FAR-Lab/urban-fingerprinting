@@ -16,3 +16,6 @@
 [submodule "static/libraries/mmpretrain"]
 	path = static/libraries/mmpretrain
 	url = git@github.com:open-mmlab/mmpretrain.git
+[submodule "static/libraries/sam-hq"]
+	path = static/libraries/sam-hq
+	url = git@github.com:SysCV/sam-hq.git
