@@ -26,7 +26,7 @@ if __name__ == '__main__':
     parser.add_argument("-n", "--name", type=str, default="default", help="Name of project to set PROJECT_NAME to.")
     args = parser.parse_args()
 
-    # Set project name
+    # Set project name variable
     PROJECT_NAME = args.name
 
     # Set path to io.py
