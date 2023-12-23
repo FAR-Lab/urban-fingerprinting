@@ -84,7 +84,7 @@ class LetterboxingHandler:
             image = cv2.imread(row["path"])
             image = self._remove_letterboxing(image)
             cv2.imwrite(os.path.join(output_dir, f"{prefix}{row['filename']}"), image)
-            self.logger.success(f"Removed letterboxing from {row['filename']}")
+            self.logger.debug(f"Removed letterboxing from {row['filename']}")
 
     
 # implement a CLI for this class
