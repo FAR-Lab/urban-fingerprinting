@@ -19,3 +19,6 @@
 [submodule "static/libraries/sam-hq"]
 	path = static/libraries/sam-hq
 	url = git@github.com:SysCV/sam-hq.git
+[submodule "static/libraries/Grounded-Segment-Anything"]
+	path = static/libraries/Grounded-Segment-Anything
+	url = git@github.com:IDEA-Research/Grounded-Segment-Anything.git
