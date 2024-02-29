@@ -4,6 +4,7 @@
 
 # This script is used to take the roads of a graph G, and a set of annotated dashcam frames F, and generate commodity densities for each road in G.
 
+import uu
 import pandas as pd
 import numpy as np
 import geopandas as gpd
@@ -57,7 +58,7 @@ from src.visualization import animated_map as am
 from src.analysis.day_of_coverage import DayOfCoverage
 from src.processing.h3_utils import h3_to_polygon, crop_within_polygon
 
-from user.params.io import INSTALL_DIR, PROJECT_NAME
+from user.params.io import INSTALL_DIR, PROJECT_NAME, OUTPUT_DIR
 
 from user.params.data import (
     LONGITUDE_COL,
@@ -165,10 +166,10 @@ class G:
         """
 
         # Check if md file has already been written to output
-        if os.path.exists(f"{INSTALL_DIR}/{PROJECT_NAME}/df/{day_of_coverage}/md.csv"):
+        if os.path.exists(f"{OUTPUT_DIR}/{PROJECT_NAME}/df/{day_of_coverage}/md.csv"):
             # read md file from output
             md = pd.read_csv(
-                f"{INSTALL_DIR}/{PROJECT_NAME}/df/{day_of_coverage}/md.csv", engine="pyarrow"
+                f"{OUTPUT_DIR}/{PROJECT_NAME}/df/{day_of_coverage}/md.csv", engine="pyarrow"
             )
             md = gpd.GeoDataFrame(
                 md, geometry=wkt.loads(md["geometry"]), crs=PROJ_CRS
@@ -197,7 +198,7 @@ class G:
         for i, hex_dir in enumerate(hex_dirs_md):
             # get list of csvs in hex_dir
             csvs = glob(
-                os.path.join(self.PROJ_PATH, day_of_coverage, hex_dir, "*.csv")
+                os.path.join(self.PROJ_PATH, day_of_coverage, hex_dir, "frames", "*.csv")
             )
             # check if there is more than one csv
             if len(csvs) > 1:
@@ -245,8 +246,8 @@ class G:
         md = md.to_crs(PROJ_CRS)
 
         if self.WRITE_MODE:
-            os.makedirs(f"{INSTALL_DIR}/{PROJECT_NAME}/df/{day_of_coverage}", exist_ok=True)
-            md.to_csv(f"{INSTALL_DIR}/{PROJECT_NAME}/df/{day_of_coverage}/md.csv")
+            os.makedirs(f"{OUTPUT_DIR}/{PROJECT_NAME}/df/{day_of_coverage}", exist_ok=True)
+            md.to_csv(f"{OUTPUT_DIR}/{PROJECT_NAME}/df/{day_of_coverage}/md.csv")
             self.log.info(
                 f"Wrote metadata to output for day of coverage {day_of_coverage}."
             )
@@ -302,11 +303,11 @@ class G:
 
         # Check if nearest edges have already been written to output
         if os.path.exists(
-            f"{INSTALL_DIR}/{PROJECT_NAME}/df/{day_of_coverage}/nearest_edges.csv"
+            f"{OUTPUT_DIR}/{PROJECT_NAME}/df/{day_of_coverage}/nearest_edges.csv"
         ):
             # read nearest edges from output
             nearest_edges = pd.read_csv(
-                f"{INSTALL_DIR}/{PROJECT_NAME}/df/{day_of_coverage}/nearest_edges.csv",
+                f"{OUTPUT_DIR}/{PROJECT_NAME}/df/{day_of_coverage}/nearest_edges.csv",
                 engine="pyarrow",
                 index_col=IMG_ID,
             )
@@ -371,9 +372,9 @@ class G:
         DoC.nearest_edges = nearest_edges
 
         if self.WRITE_MODE & (not self.crop):
-            os.makedirs(f"{INSTALL_DIR}/{PROJECT_NAME}/df/{day_of_coverage}", exist_ok=True)
+            os.makedirs(f"{OUTPUT_DIR}/{PROJECT_NAME}/df/{day_of_coverage}", exist_ok=True)
             nearest_edges.to_csv(
-                f"{INSTALL_DIR}/{PROJECT_NAME}/df/{day_of_coverage}/nearest_edges.csv"
+                f"{OUTPUT_DIR}/{PROJECT_NAME}/df/{day_of_coverage}/nearest_edges.csv"
             )
             self.log.info(
                 f"Wrote nearest edges to output for day of coverage {day_of_coverage}."
@@ -389,7 +390,7 @@ class G:
         Adds a GeoDataFrame object representing the detections for the given day of coverage to the graph.
         """
         detections = pd.read_csv(
-            f"{INSTALL_DIR}/{PROJECT_NAME}/df/{day_of_coverage}/detections.csv",
+            f"{OUTPUT_DIR}/{PROJECT_NAME}/df/{day_of_coverage}/detections.csv",
             engine="pyarrow",
             index_col=0,
         )
@@ -468,7 +469,7 @@ class G:
         _, ax = plt.subplots(figsize=(20, 20))
         self.gdf_edges.plot(ax=ax, color="black", linewidth=0.5)
         rID = uuid.uuid4().hex[:8]
-        plt.savefig(f"{INSTALL_DIR}/{PROJECT_NAME}/plots/edges_{rID}.png")
+        plt.savefig(f"{OUTPUT_DIR}/{PROJECT_NAME}/plots/edges_{rID}.png")
         plt.close()
 
     def plot_coverage(self, day_of_coverage):
@@ -526,7 +527,7 @@ class G:
 
         rID = datetime.datetime.now().strftime("%Y-%m-%d_%H:%M:%S")
         plt.savefig(
-            f"{INSTALL_DIR}/{PROJECT_NAME}/plots/coverage_{rID}.png",
+            f"{OUTPUT_DIR}/{PROJECT_NAME}/plots/coverage_{rID}.png",
             bbox_inches="tight",
             pad_inches=0,
         )
@@ -545,10 +546,10 @@ class G:
         
         coverage = DoC.detections.merge(DoC.nearest_edges, left_index=True, right_on=IMG_ID, how="left")
         
-        try:
-            coverage = coverage.dropna(subset=['osmid'], axis=0)
-        except KeyError as e:
-            self.log.error(f"KeyError in plotting detections for {day_of_coverage}: {str(e)}")
+        #try:
+        #    coverage = coverage.dropna(subset=['osmid'], axis=0)
+        #except KeyError as e:
+        #    self.log.error(f"KeyError in plotting detections for {day_of_coverage}: {str(e)}")
             
 
 
@@ -600,10 +601,10 @@ class G:
         
 
         rID = datetime.datetime.now().strftime("%Y-%m-%d_%H:%M:%S")
-        os.makedirs(f"{INSTALL_DIR}/{PROJECT_NAME}/plots/{day_of_coverage}", exist_ok=True)
+        os.makedirs(f"{OUTPUT_DIR}/{PROJECT_NAME}/plots/{day_of_coverage}", exist_ok=True)
         try:
             plt.savefig(
-                f"{INSTALL_DIR}/{PROJECT_NAME}/plots/{day_of_coverage}/{class_id}_density_{rID}.png",
+                f"{OUTPUT_DIR}/{PROJECT_NAME}/plots/{day_of_coverage}/{class_id}_density_{rID}.png",
                 bbox_inches="tight",
                 pad_inches=0,
             )
@@ -790,11 +791,11 @@ class G:
             .reset_index()
         )
 
-        os.makedirs(f"{INSTALL_DIR}/{PROJECT_NAME}/df/density", exist_ok=True)
+        os.makedirs(f"{OUTPUT_DIR}/{PROJECT_NAME}/df/density", exist_ok=True)
         density.describe().to_csv(
-            f'{INSTALL_DIR}/{PROJECT_NAME}/df/density/density_describe.csv'
+            f'{OUTPUT_DIR}/{PROJECT_NAME}/df/density/density_describe.csv'
         )
-        density.to_csv(f'{INSTALL_DIR}/{PROJECT_NAME}/df/density/density.csv')
+        density.to_csv(f'{OUTPUT_DIR}/{PROJECT_NAME}/df/density/density.csv')
 
         del data
         del detections
@@ -983,9 +984,9 @@ class G:
         ax.title.set_position([0.5, 1.05])
 
         rID = datetime.datetime.now().strftime("%Y-%m-%d_%H:%M:%S")
-        os.makedirs(f"{INSTALL_DIR}/{PROJECT_NAME}/plots/{output_dir}", exist_ok=True)
+        os.makedirs(f"{OUTPUT_DIR}/{PROJECT_NAME}/plots/{output_dir}", exist_ok=True)
         plt.savefig(
-            f"{INSTALL_DIR}/{PROJECT_NAME}/plots/{output_dir}/{class_id}_density_{rID}.png",
+            f"{OUTPUT_DIR}/{PROJECT_NAME}/plots/{output_dir}/{class_id}_density_{rID}.png",
             bbox_inches="tight",
             pad_inches=0,
         )
@@ -1133,7 +1134,7 @@ class G:
         bins = pd.date_range(dtbounds[0], dtbounds[1], freq=delta)
         bins = bins.tz_localize(TZ)
 
-        output_dir = uuid.uuid4().hex[:8]
+        output_dir = f"{DoCs[0]}_{DoCs[-1]}_{class_id}_{uuid.uuid4().hex[:8]}"
 
         # generate cb norm and cmap
         bounds = self._compute_density_range(
@@ -1165,6 +1166,15 @@ class G:
                 class_id,
                 car_offset=car_offset,
             )
+
+            # save density to csv 
+            try:
+                os.makedirs(f"{OUTPUT_DIR}/{PROJECT_NAME}/df/density/{output_dir}", exist_ok=True)
+                density.to_csv(f"{OUTPUT_DIR}/{PROJECT_NAME}/df/density/{output_dir}/{idx}_{dtbounds[0]}_{dtbounds[1]}.csv")
+                self.log.success(f"Saved density to csv for {idx}_{dtbounds[0]}_{dtbounds[1]}.")
+            except Exception as e:
+                self.log.error(f"Error saving density to csv: {str(e)}")
+
             del plot_data
             tod_flag = False
             args.append(
@@ -1282,6 +1292,14 @@ class G:
             car_offset=car_offset,
         )
 
+        # write to csv 
+        try:
+            os.makedirs(f"{OUTPUT_DIR}/{PROJECT_NAME}/df/density/{output_dir}", exist_ok=True)
+            density.to_csv(f"{OUTPUT_DIR}/{PROJECT_NAME}/df/density/{output_dir}/{idx}_{tbounds[0]}_{tbounds[1]}.csv")
+            self.log.success(f"Saved density to csv for {idx}_{tbounds[0]}_{tbounds[1]}.")
+        except Exception as e:
+            self.log.error(f"Error saving density to csv: {str(e)}")
+
         copy_of_neighbors = self.precomputed_neighbors.copy()
 
         try:
@@ -1289,6 +1307,14 @@ class G:
         except Exception as e:
             self.log.error(f"Error in smoothing for {tbounds}: {e}")
             return
+
+        # write smoothed density to csv
+        try:
+            os.makedirs(f"{OUTPUT_DIR}/{PROJECT_NAME}/df/density/{output_dir}", exist_ok=True)
+            density.to_csv(f"{OUTPUT_DIR}/{PROJECT_NAME}/df/density/{output_dir}/{idx}_{tbounds[0]}_{tbounds[1]}_smoothed.csv")
+            self.log.success(f"Saved smoothed density to csv for {idx}_{tbounds[0]}_{tbounds[1]}.")
+        except Exception as e:
+            self.log.error(f"Error saving smoothed density to csv: {str(e)}")
 
         del plot_data
         del copy_of_neighbors
@@ -1347,7 +1373,8 @@ class G:
         # bins = bins.tz_localize(TZ)
         self.log.info(f"Generated {len(bins)} time bins.")
 
-        output_dir = uuid.uuid4().hex[:8]
+        # output_dir = first DoC_last DoC_UUID
+        output_dir = f"{DoCs[0]}_{DoCs[-1]}_{class_id}_{uuid.uuid4().hex[:8]}"
 
         # generate cb norm and cmap
         bounds = self._compute_density_range(
@@ -1509,7 +1536,7 @@ class G:
             loop (int, optional): The number of times the GIF should loop. Defaults to 0.
         """
 
-        os.makedirs(f"{INSTALL_DIR}/{PROJECT_NAME}/gifs", exist_ok=True)
+        os.makedirs(f"{OUTPUT_DIR}/{PROJECT_NAME}/gifs", exist_ok=True)
 
         now = datetime.datetime.now().strftime("%Y-%m-%d_%H:%M:%S")
 
@@ -1517,13 +1544,13 @@ class G:
             self.log.error("No frames directory found.")
             return
 
-        fp_out = f"{INSTALL_DIR}/{PROJECT_NAME}/gifs/{class_id}_{frames_dir}_{now}.gif"
+        fp_out = f"{OUTPUT_DIR}/{PROJECT_NAME}/gifs/{class_id}_{frames_dir}_{now}.gif"
 
         with contextlib.ExitStack() as stack:
             # lazily load images
             imgs = (
                 stack.enter_context(Image.open(f))
-                for f in sorted(glob(f"{INSTALL_DIR}/{PROJECT_NAME}/plots/{frames_dir}/*.png"))
+                for f in sorted(glob(f"{OUTPUT_DIR}/{PROJECT_NAME}/plots/{frames_dir}/*.png"))
             )
 
             # extract  first image from iterator
