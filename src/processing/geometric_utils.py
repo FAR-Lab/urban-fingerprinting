@@ -51,8 +51,8 @@ class Frame:
 
     def __init__(self, md_row):
         self.id = md_row[IMG_ID]
-        self.log = setup_logger(name=self.id)
-        self.log.setLevel(logging.DEBUG)
+        self.log = setup_logger(name="Frame")
+        self.log.setLevel(logging.WARNING)
         
         self.lng = md_row[LONGITUDE_COL]
         self.lat = md_row[LATITUDE_COL]
@@ -79,13 +79,17 @@ class Frame:
             case (float(), float()):
 
                 if not Frame.crs_transformer.within_crs_bounds(other[0], other[1]):
-                    self.log.warning(
+                    self.log.debug(
                         f"Frame {self.id} is outside of CRS bounds, projecting..."
                     )
                     x2, y2 = Frame.crs_transformer.transformer.transform(
                         other[0], other[1]
                     )
+                
+                else: 
+                    x2, y2 = other
                     
+                #print(x2, y2)
                 
                 return np.sqrt(
                     (self.x - x2) ** 2 + (self.y - y2) ** 2
@@ -97,7 +101,7 @@ class Frame:
                 x1, y1 = self.x, self.y
 
                 if not Frame.crs_transformer.within_crs_bounds(other.x, other.y):
-                    self.log.warning(
+                    self.log.debug(
                         f"Frame {self.id} is outside of CRS bounds, projecting..."
                     )
                     x2, y2 = Frame.crs_transformer.transformer.transform(
@@ -112,7 +116,7 @@ class Frame:
 
                 x2, y2 = other
                 if not Frame.crs_transformer.within_crs_bounds(x2, y2):
-                    self.log.warning(
+                    self.log.debug(
                         f"Frame {self.id} is outside of CRS bounds, projecting..."
                     )
                     x2, y2 = Frame.crs_transformer.transformer.transform(
@@ -177,27 +181,42 @@ class Frame:
     
 
 
-    def depicts_coordinates(self, coordinates: tuple):
+    def depicts_coordinates(self, coordinates: tuple, snapped=True):
         # compute angle between self and coordinates
         angle = self.angle(coordinates)
 
-        # compute difference between angle and heading
-        # if difference is within view cone, pass
-        # else, fail
-        if self.angle_btwn(angle) > VIEW_CONE:
-            #print(self.angle_btwn_direction(angle))
-            self.log.info(
-                f"Angle between frame and coordinates is {self.angle_btwn(angle)}, > {VIEW_CONE}"
-            )
-            return False
+        if snapped: 
+            # compute difference between angle and heading
+            # if difference is within view cone, pass
+            # else, fail
+            if self.angle_btwn(angle) > VIEW_CONE:
+                #print(self.angle_btwn_direction(angle))
+                self.log.info(
+                    f"Angle between frame and coordinates is {self.angle_btwn(angle)}, > {VIEW_CONE}"
+                )
+                return False
+        
+            # We need to offset the view distance based on the angle between self and coordinates 
+            # If the angle is 90 or 270, the view distance should be very close to 0 (i.e. the frame is looking perpendicular to the road)
+            # If the angle is 0 or 180, the view distance should be the full view distance (i.e. the frame is looking directly down the road)
+            # If the angle is between 0 and 90 or 180 and 270, the view distance should be somewhere in between
+            # We can use the sine function to compute this offset
+
+            view_distance_adj = VIEW_DISTANCE
+
+        else: 
+            # First, compute the angle between self and coordinates
+            angle = angle 
+            # Then, compute the offset
+            view_distance_adj = VIEW_DISTANCE * np.sin(angle)
 
         # now, compute distance between self and coordinates
         # if distance is within view distance, pass
         # else, fail
-        if self.distance(coordinates) > VIEW_DISTANCE:
-            print(self.distance(coordinates))
+        if self.distance(coordinates) > view_distance_adj:
+            
             self.log.info(
-                f"Distance between frame and coordinates is {self.distance(coordinates)}, > {VIEW_DISTANCE}"
+                f"Distance between frame and coordinates is {self.distance(coordinates)}, > {view_distance_adj}"
             )
             return False
 
