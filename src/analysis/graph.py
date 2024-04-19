@@ -58,7 +58,11 @@ from src.visualization import animated_map as am
 from src.analysis.day_of_coverage import DayOfCoverage
 from src.processing.h3_utils import h3_to_polygon, crop_within_polygon
 
-from user.params.io import INSTALL_DIR, PROJECT_NAME, OUTPUT_DIR
+import user.params.io as urbanECG_io 
+from importlib import reload
+reload(urbanECG_io)
+
+from user.params.io import INSTALL_DIR, PROJECT_NAME, OUTPUT_DIR, TOP_LEVEL_FRAMES_DIR
 
 from user.params.data import (
     LONGITUDE_COL,
@@ -89,7 +93,7 @@ class G:
         self.log = setup_logger("Graph")
         self.log.setLevel(logging.INFO)
         self.log.info(f"Loading graph at path {graphml_input}")
-        self.PROJ_PATH = proj_path
+        self.PROJ_PATH = TOP_LEVEL_FRAMES_DIR
         self.days_of_coverage = []
         self.geo = ox.io.load_graphml(graphml_input)
         self.gdf_nodes = ox.utils_graph.graph_to_gdfs(self.geo, edges=False)
@@ -97,6 +101,8 @@ class G:
 
         self.crop = crop
         self.crop_id = crop_id
+
+        self.SMOOTH = False
 
         if crop and crop_id is not None:
             self.log.info(f"Cropping graph to {crop_id}")
@@ -198,7 +204,7 @@ class G:
         for i, hex_dir in enumerate(hex_dirs_md):
             # get list of csvs in hex_dir
             csvs = glob(
-                os.path.join(self.PROJ_PATH, day_of_coverage, hex_dir, "frames", "*.csv")
+                os.path.join(self.PROJ_PATH, day_of_coverage, hex_dir, "metadata.csv")
             )
             # check if there is more than one csv
             if len(csvs) > 1:
@@ -251,6 +257,7 @@ class G:
             self.log.info(
                 f"Wrote metadata to output for day of coverage {day_of_coverage}."
             )
+        
 
         # return md for day of coverage
         return md
@@ -915,6 +922,16 @@ class G:
         density = self.gdf_edges.merge(density, on=["u", "v"], how="left")
         density = density.to_crs(PROJ_CRS)
 
+        # write density to csv 
+        try: 
+            os.makedirs(f"{OUTPUT_DIR}/{PROJECT_NAME}/df/plot_density", exist_ok=True)
+            os.makedirs(f"{OUTPUT_DIR}/{PROJECT_NAME}/df/plot_density/{output_dir}", exist_ok=True)
+            print(f"{OUTPUT_DIR}/{PROJECT_NAME}/df/plot_density/{output_dir}/{class_id}_density_{b}.csv")
+            density.to_csv(f"{OUTPUT_DIR}/{PROJECT_NAME}/df/plot_density/{output_dir}/{class_id}_density_{b}.csv")
+        except Exception as e: 
+            self.log.error(f"Error writing density to csv: {str(e)}")
+
+
         fig, ax = plt.subplots(figsize=(40, 40), frameon=True)
 
         
@@ -1171,7 +1188,7 @@ class G:
             try:
                 os.makedirs(f"{OUTPUT_DIR}/{PROJECT_NAME}/df/density/{output_dir}", exist_ok=True)
                 density.to_csv(f"{OUTPUT_DIR}/{PROJECT_NAME}/df/density/{output_dir}/{idx}_{dtbounds[0]}_{dtbounds[1]}.csv")
-                self.log.success(f"Saved density to csv for {idx}_{dtbounds[0]}_{dtbounds[1]}.")
+                self.log.info(f"Saved density to csv for {idx}_{dtbounds[0]}_{dtbounds[1]}.")
             except Exception as e:
                 self.log.error(f"Error saving density to csv: {str(e)}")
 
@@ -1296,25 +1313,34 @@ class G:
         try:
             os.makedirs(f"{OUTPUT_DIR}/{PROJECT_NAME}/df/density/{output_dir}", exist_ok=True)
             density.to_csv(f"{OUTPUT_DIR}/{PROJECT_NAME}/df/density/{output_dir}/{idx}_{tbounds[0]}_{tbounds[1]}.csv")
-            self.log.success(f"Saved density to csv for {idx}_{tbounds[0]}_{tbounds[1]}.")
+            
+            self.log.info(f"Saved density to csv for {idx}_{tbounds[0]}_{tbounds[1]}.")
         except Exception as e:
+            print(f"Error saving density to csv: {str(e)}")
             self.log.error(f"Error saving density to csv: {str(e)}")
 
         copy_of_neighbors = self.precomputed_neighbors.copy()
 
-        try:
-            density = self.smoothing(density, idx, copy_of_neighbors)
-        except Exception as e:
-            self.log.error(f"Error in smoothing for {tbounds}: {e}")
-            return
+        if self.SMOOTH:
 
-        # write smoothed density to csv
-        try:
-            os.makedirs(f"{OUTPUT_DIR}/{PROJECT_NAME}/df/density/{output_dir}", exist_ok=True)
-            density.to_csv(f"{OUTPUT_DIR}/{PROJECT_NAME}/df/density/{output_dir}/{idx}_{tbounds[0]}_{tbounds[1]}_smoothed.csv")
-            self.log.success(f"Saved smoothed density to csv for {idx}_{tbounds[0]}_{tbounds[1]}.")
-        except Exception as e:
-            self.log.error(f"Error saving smoothed density to csv: {str(e)}")
+            self.log.info(f"Smoothing density for {idx}...")
+
+            try:
+                density = self.smoothing(density, idx, copy_of_neighbors)
+            except Exception as e:
+                self.log.error(f"Error in smoothing for {tbounds}: {e}")
+                return
+
+            # write smoothed density to csv
+            try:
+                os.makedirs(f"{OUTPUT_DIR}/{PROJECT_NAME}/df/density/{output_dir}", exist_ok=True)
+                density.to_csv(f"{OUTPUT_DIR}/{PROJECT_NAME}/df/density/{output_dir}/{idx}_{tbounds[0]}_{tbounds[1]}_smoothed.csv")
+                self.log.info(f"Saved smoothed density to csv for {idx}_{tbounds[0]}_{tbounds[1]}.")
+            except Exception as e:
+                self.log.error(f"Error saving smoothed density to csv: {str(e)}")
+        
+        else: 
+            self.log.info(f"Skipping smoothing for {idx}...")
 
         del plot_data
         del copy_of_neighbors
@@ -1396,10 +1422,10 @@ class G:
         first_it_args = []
         for idx, b in tqdm(enumerate(bins), total=len(bins)):
             # Sliding window
-            if idx < 6:
+            if idx < 2:
                 tbounds = (bins[0], bins[idx])
             else:
-                tbounds = (bins[idx - 6], bins[idx])
+                tbounds = (bins[idx - 2], bins[idx])
             # dtbounds = (b, b + pd.Timedelta(delta))
             try:
                 plot_data = data.frames_data[

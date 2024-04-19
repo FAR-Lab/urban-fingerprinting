@@ -43,7 +43,7 @@ def coverage_growth_over_time(G):
         roads_covered_growth[DoC.date] = len(roads_covered.index)
 
     timestamp = pd.Timestamp.now().strftime("%Y-%m-%d_%H-%M-%S")
-    os.makedirs(f'{INSTALL_DIR}/{PROJECT_NAME}/coverage_growth", exist_ok=True)
+    os.makedirs(f'{OUTPUT_DIR}/{PROJECT_NAME}/coverage_growth', exist_ok=True)
 
     df = pd.DataFrame()
     df["roads_covered"] = roads_covered_growth
@@ -52,7 +52,7 @@ def coverage_growth_over_time(G):
         f"Saving coverage growth to output/coverage_growth/{len(G.days_of_coverage)}_days_of_coverage_{timestamp}.csv..."
     )
     df.to_csv(
-        f"{INSTALL_DIR}/{PROJECT_NAME}/coverage_growth/{len(G.days_of_coverage)}_days_of_coverage_{timestamp}.csv"
+        f"{OUTPUT_DIR}/{PROJECT_NAME}/coverage_growth/{len(G.days_of_coverage)}_days_of_coverage_{timestamp}.csv"
     )
 
     return df
@@ -91,8 +91,8 @@ def plot_coverage_growth_over_time(data_frame, graph):
     ax.set_title("Roads Covered With Successive Days of Coverage")
 
     # Create the output directories.
-    os.makedirs(f'{INSTALL_DIR}/{PROJECT_NAME}/coverage_growth", exist_ok=True)
-    os.makedirs(f'{INSTALL_DIR}/{PROJECT_NAME}/coverage_growth/figures", exist_ok=True)
+    os.makedirs(f'{OUTPUT_DIR}/{PROJECT_NAME}/coverage_growth', exist_ok=True)
+    os.makedirs(f'{OUTPUT_DIR}/{PROJECT_NAME}/coverage_growth/figures', exist_ok=True)
 
     # Get the current timestamp.
     timestamp = pd.Timestamp.now().strftime("%Y-%m-%d_%H-%M-%S")
