@@ -13,7 +13,41 @@ import argparse
 sys.path.append(os.path.join("..", ".."))
 
 from src.utils.logger import setup_logger
+from user.params.io import INSTALL_DIR 
+import user.params.io as iofile
 
+import importlib 
+
+
+# implement same functionality in function called set_project 
+# that takes in a project name and sets PROJECT_NAME to that name
+# if no argument is given, we reset PROJECT_NAME to the default value of "default"
+def set_project(project_name="default"):
+    logger = setup_logger("toggle_project")
+    logger.setLevel("INFO")
+
+    # Set path to io.py
+    io_path = os.path.join(INSTALL_DIR, "user", "params", "io.py")
+
+    # Read in io.py
+    with open(io_path, "r") as io_file:
+        io_lines = io_file.readlines()
+
+    # Find line with PROJECT_NAME
+    for i, line in enumerate(io_lines):
+        if "PROJECT_NAME" in line:
+            io_lines[i] = f"PROJECT_NAME = '{project_name}'\n"
+
+    # Write out io.py
+    with open(io_path, "w") as io_file:
+        io_file.writelines(io_lines)
+
+    # Print confirmation message
+    importlib.reload(iofile)
+    logger.success(f"PROJECT_NAME set to {project_name} in {io_path}")
+
+def reset_project():
+    set_project()
 
 # Define main function
 if __name__ == '__main__':
