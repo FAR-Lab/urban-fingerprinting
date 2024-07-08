@@ -25,3 +25,6 @@
 [submodule "static/libraries/dinov2"]
 	path = static/libraries/dinov2
 	url = git@github.com:facebookresearch/dinov2.git
+[submodule "static/libraries/yolov9"]
+	path = static/libraries/yolov9
+	url = git@github.com:WongKinYiu/yolov9.git

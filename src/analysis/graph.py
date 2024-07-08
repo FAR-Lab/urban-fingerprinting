@@ -221,7 +221,7 @@ class G:
                 hex_dirs_md[i] = csvs[0]
 
         self.log.info("Loading frames and metadata...")
-        frames = Parallel(n_jobs=NUM_CORES)(
+        frames = Parallel(n_jobs=NUM_CORES,  timeout=99999)(
             delayed(self._get_frames_worker)(folder)
             for folder in tqdm(hex_dirs)
         )
@@ -229,7 +229,7 @@ class G:
         self.log.info(f"All frames loaded. Number of frames: {len(frames)}")
 
         # Map get_md_counts_worker to all hex_dirs_md
-        md = Parallel(n_jobs=NUM_CORES)(
+        md = Parallel(n_jobs=NUM_CORES, timeout=99999)(
             delayed(self._get_md_worker)(md_csv) for md_csv in tqdm(hex_dirs_md)
         )
         md = pd.concat(md)
@@ -345,7 +345,7 @@ class G:
 
         md_split = np.array_split(md, 10 * NUM_CORES)
 
-        nearest = Parallel(n_jobs=NUM_CORES)(
+        nearest = Parallel(n_jobs=NUM_CORES, timeout=99999)(
             delayed(self._nearest_road_worker)(subset)
             for subset in tqdm(md_split)
         )
@@ -1208,7 +1208,7 @@ class G:
                 )
             )
 
-        Parallel(n_jobs=NUM_CORES)(
+        Parallel(n_jobs=NUM_CORES, timeout=99999)(
             delayed(self._plot_density_per_road_segment_parallel)(arg)
             for arg in tqdm(
                 args, desc="Generating density-over-datetime GIF frames."
@@ -1471,7 +1471,7 @@ class G:
                 )
                 continue
 
-        args = Parallel(n_jobs=3)(
+        args = Parallel(n_jobs=3, timeout=99999)(
             delayed(self._parallel_plot_args_generator)(arg)
             for arg in tqdm(
                 first_it_args,
@@ -1484,7 +1484,7 @@ class G:
         )
 
         self.log.info(f"Plotting density per road segment for {DoCs}.")
-        Parallel(n_jobs=NUM_CORES)(
+        Parallel(n_jobs=NUM_CORES, timeout=99999)(
             delayed(self._plot_density_per_road_segment_parallel)(arg)
             for arg in tqdm(args, desc="Plotting density per road segment.")
         )
