@@ -20,12 +20,15 @@ from sklearn import metrics
 
 class AUC_ROC:
 
-    def __init__(self, predictions_path):
+    def __init__(self, predictions_path, prefix=""):
             self.logger = setup_logger("AUC_ROC")
             self.logger.setLevel("INFO")
             self.logger.info("Initializing AUC_ROC class")
 
+            self.prefix = prefix
+
             # predictions should be a pkl file generated via mmpretrain/tools/test.py
+            self.logger.info("Loading predictions from " + predictions_path)
             self.predictions = pd.read_pickle(predictions_path)
 
             # convert predictiosn to dataframe
@@ -88,9 +91,45 @@ class AUC_ROC:
         plt.legend(loc="lower right")
 
         # save figure
-        plt.savefig("roc_curve.png", bbox_inches='tight')
+        plt.savefig(f"{self.prefix}_roc_curve.png", bbox_inches='tight')
+
+        plt.close()
+        plt.clf()
 
         self.logger.info("ROC curve saved to roc_curve.png")
+
+    # script to generate auprc 
+    def auprc(self):
+        """
+        This function generates an AUPRC curve for the given predictions. 
+        """
+        self.logger.info("Generating AUPRC curve")
+
+        # toggle latex rendering
+        plt.rc('text', usetex=True)
+
+        # get precision and recall
+        precision, recall, thresholds = metrics.precision_recall_curve(self.predictions['gt_label'],self.predictions['pred_score'], pos_label=1)
+
+        # get area under the curve
+        auc = metrics.auc(recall, precision)
+
+        # plot the roc curve
+        plt.plot(recall, precision, label='AUPRC curve (area = %0.2f)' % auc)
+
+        # set plot labels
+        plt.xlabel('Recall')
+        plt.ylabel('Precision')
+        plt.title('Precision-Recall Curve')
+        plt.legend(loc="lower right")
+
+        # save figure
+        plt.savefig(f"{self.prefix}_auprc_curve.png", bbox_inches='tight')
+
+        plt.close()
+        plt.clf()
+
+        self.logger.info("AUPRC curve saved to auprc_curve.png")
     
 
 
@@ -98,9 +137,10 @@ class AUC_ROC:
 # test the class via __main__ 
 if __name__ == "__main__":
     print("Testing AUC_ROC class")
-    auc_roc = AUC_ROC("/share/ju/urbanECG/static/libraries/mmpretrain/results.pkl")
+    auc_roc = AUC_ROC(sys.argv[1], sys.argv[2])
     auc_roc.inspect_predictions()
     auc_roc.roc_curve()
+    auc_roc.auprc()
     print("Testing complete")
 
         

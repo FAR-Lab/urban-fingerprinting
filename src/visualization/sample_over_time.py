@@ -135,7 +135,7 @@ class SampleOverTime(object):
         plt.axis("off")
 
         plt.savefig(
-            f"{INSTALL_DIR}/{PROJECT_NAME}/sample_over_time/{self.id}/{idx}.png",
+            f"{OUTPUT_DIR}/{PROJECT_NAME}/sample_over_time/{self.id}/{idx}.png",
             bbox_inches="tight",
             pad_inches=0,
         )
@@ -157,7 +157,7 @@ class SampleOverTime(object):
 
         # create output directory
         self.id = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
-        os.mkdir(f"{INSTALL_DIR}/{PROJECT_NAME}/sample_over_time/{self.id}")
+        os.mkdir(f"{OUTPUT_DIR}/{PROJECT_NAME}/sample_over_time/{self.id}")
 
         self.log.info(f"Generating frames for {self.id}.")
         # generate frames in parallel
@@ -173,7 +173,7 @@ class SampleOverTime(object):
     def generate_gif(self):
         self.log.info(f"Generating GIF for {self.id}.")
 
-        frames = glob.glob(f"{INSTALL_DIR}/{PROJECT_NAME}/sample_over_time/{self.id}/*.png")
+        frames = glob.glob(f"{OUTPUT_DIR}/{PROJECT_NAME}/sample_over_time/{self.id}/*.png")
         frames = sorted(
             frames, key=lambda x: int(x.split("/")[-1].split(".")[0])
         )
@@ -181,7 +181,7 @@ class SampleOverTime(object):
         frames = [Image.open(frame) for frame in frames]
 
         frames[0].save(
-            f"{INSTALL_DIR}/{PROJECT_NAME}/sample_over_time/{self.id}.gif",
+            f"{OUTPUT_DIR}/{PROJECT_NAME}/sample_over_time/{self.id}.gif",
             format="GIF",
             append_images=frames[1:],
             save_all=True,

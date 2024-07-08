@@ -34,7 +34,7 @@ class AnnotationViewer:
 
     def get_annotations(self, frame_id, yolo_detections_path=""):
         if yolo_detections_path == "":
-            yolo_detections_path = f"{INSTALL_DIR}/{PROJECT_NAME}/yolo/{self.DoC}"
+            yolo_detections_path = f"{OUTPUT_DIR}/{PROJECT_NAME}/yolo/{self.DoC}"
 
         # frame_id must be in self.image_pull.image_list
         if frame_id not in self.image_pull.image_list["frame_id"].values:
@@ -138,10 +138,10 @@ class AnnotationViewer:
             )
 
             # make sure output dire exists if not create it
-            if not os.path.exists(f"{INSTALL_DIR}/{PROJECT_NAME}/annotation_viewer"):
-                os.makedirs(f"{INSTALL_DIR}/{PROJECT_NAME}/annotation_viewer")
+            if not os.path.exists(f"{OUTPUT_DIR}/{PROJECT_NAME}/annotation_viewer"):
+                os.makedirs(f"{OUTPUT_DIR}/{PROJECT_NAME}/annotation_viewer")
             plt.savefig(
-                f"{INSTALL_DIR}/{PROJECT_NAME}/annotation_viewer/{frame_id}.png",
+                f"{OUTPUT_DIR}/{PROJECT_NAME}/annotation_viewer/{frame_id}.png",
                 bbox_inches="tight",
                 pad_inches=0,
             )
@@ -180,13 +180,13 @@ class AnnotationViewer:
 
             # make sure output dire exists if not create it
             if not os.path.exists(
-                f"{INSTALL_DIR}/{PROJECT_NAME}/annotation_viewer/{class_id}"
+                f"{OUTPUT_DIR}/{PROJECT_NAME}/annotation_viewer/{class_id}"
             ):
-                os.makedirs(f"{INSTALL_DIR}/{PROJECT_NAME}/annotation_viewer/{class_id}")
+                os.makedirs(f"{OUTPUT_DIR}/{PROJECT_NAME}/annotation_viewer/{class_id}")
 
             # save crop
             plt.imsave(
-                f"{INSTALL_DIR}/{PROJECT_NAME}/annotation_viewer/{class_id}/{frame_id}_{idx}.png",
+                f"{OUTPUT_DIR}/{PROJECT_NAME}/annotation_viewer/{class_id}/{frame_id}_{idx}.png",
                 crop,
             )
 
