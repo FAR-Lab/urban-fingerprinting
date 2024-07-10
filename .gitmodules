@@ -28,3 +28,9 @@
 [submodule "static/libraries/yolov9"]
 	path = static/libraries/yolov9
 	url = git@github.com:WongKinYiu/yolov9.git
+[submodule "src/cv/ssci/SAM-Adapter-PyTorch"]
+	path = src/cv/ssci/SAM-Adapter-PyTorch
+	url = git@github.com:tianrun-chen/SAM-Adapter-PyTorch.git
+[submodule "src/cv/ssci/FastSAM"]
+	path = src/cv/ssci/FastSAM
+	url = git@github.com:CASIA-IVA-Lab/FastSAM.git
