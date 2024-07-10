@@ -5,7 +5,7 @@ This approach utilizes visual data taken at a smaller-scale, using consumer devi
 
 
 ### Sample Data: NYC GoPro Footage 
-From FARLAB's cross-cultural pedestrian behavior work, we provide a short sample of footage taken by a participant during their daily commute. This footage is recorded with a GoPro action camera, producing high-resolution 4K video. As mentioned in our paper, gathering accurate telemetry data using only a GoPro is infeasible; we provide instructions for replicating our OpenHaystack-based Apple Airtag solution in the [XXX](LINK) section. 
+From FARLAB's cross-cultural pedestrian behavior work, we provide a short sample of footage taken by a participant during their daily commute. This footage is recorded with a GoPro action camera, producing high-resolution 4K video. As mentioned in our paper, gathering accurate telemetry data using only a GoPro is infeasible; we provide instructions for replicating our OpenHaystack-based Apple Airtag solution in the [XXX](LINK) section. Sample footage is available at [this](https://cornell.box.com/v/urban-fingerprinting-sample) link, through Box. 
 
 
 ## Processing 
