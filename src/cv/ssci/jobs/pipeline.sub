@@ -1,0 +1,23 @@
+#!/bin/bash 
+#SBATCH -J xc_pipeline
+#SBATCH -o /home/mwf62/xc_%j.out 
+#SBATCH -e /home/mwf62/xc_%j.err 
+#SBATCH --mail-type=NONE 
+#SBATCH --mail-user=mwf62@cornell.edu 
+#SBATCH -N 1
+#SBATCH -n 2
+#SBATCH --get-user-env
+#SBATCH --mem=32gb
+#SBATCH --gpus=1
+#SBATCH -t 400:00:00 
+#SBATCH --partition=ju
+
+pwd
+source /home/mwf62/.bashrc
+ 
+conda info --envs
+source activate /share/ju/conda_virtualenvs/urban-scene-understanding
+cd /share/ju/xcpedestrian/urban-scene-understanding/scripts
+
+python pipeline.py $1
+

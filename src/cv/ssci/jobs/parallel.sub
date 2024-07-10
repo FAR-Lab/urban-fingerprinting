@@ -1,0 +1,58 @@
+#!/bin/bash 
+#SBATCH -J xc_vp_scheduler
+#SBATCH -o /home/mwf62/xc_vp_scheduler_%j.out 
+#SBATCH -e /home/mwf62/xc_vp_scheduler_%j.err 
+#SBATCH --mail-type=ALL 
+#SBATCH --mail-user=mwf62@cornell.edu 
+#SBATCH -N 1
+#SBATCH -n 2
+#SBATCH --get-user-env
+#SBATCH --mem=8gb
+#SBATCH -t 400:00:00
+#SBATCH --partition=ju
+
+
+if [ "$#" -ne 1 ]; then
+    echo "Usage: $0 <directory_of_videos>"
+    exit 1
+fi
+
+DIR=$1
+WORKERS=3
+
+# Create an array of videos
+VIDEOS=("$DIR"/*.MP4)
+VIDEOS_COUNT=${#VIDEOS[@]}
+VIDEOS_PER_WORKER=$(( VIDEOS_COUNT / WORKERS ))
+
+# Function to submit jobs for a worker
+submit_jobs_for_worker() {
+    local start_idx=$1
+    local end_idx=$2
+    local previous_job_id=""
+
+    for (( i=start_idx; i<=end_idx; i++ )); do
+        local video="${VIDEOS[$i]}"
+
+        if [ -z "$previous_job_id" ]; then
+            # No dependency
+            job_id=$(sbatch --parsable /share/ju/xcpedestrian/urban-scene-understanding/jobs/pipeline.sub "$video")
+            echo "Submitted job $job_id for $video"
+        else
+            # With slurm dependency
+            job_id=$(sbatch --parsable --dependency=afterany:$previous_job_id /share/ju/xcpedestrian/urban-scene-understanding/jobs/pipeline.sub "$video")
+            echo "Submitted job $job_id for $video with dependency on $previous_job_id"
+        fi
+        previous_job_id=$job_id
+    done
+}
+
+# Submit jobs for each worker
+for (( w=0; w<WORKERS; w++ )); do
+    start_idx=$(( w * VIDEOS_PER_WORKER ))
+    end_idx=$(( start_idx + VIDEOS_PER_WORKER - 1 ))
+    if (( w == WORKERS - 1 )); then
+        end_idx=$(( VIDEOS_COUNT - 1 ))  # Ensure the last worker picks up any extra videos
+    fi
+    submit_jobs_for_worker $start_idx $end_idx &
+done
