@@ -14,13 +14,9 @@ We provide code to do the following (although, note as we only explored this par
 2. Merge and aggregate counts of detected objects at the *clip* level, or over time. 
     - NOTE: We only develop a proof-of-concept of our AirTag localization, and so we omit the granular geographic localization developed for the LSCA paradigm. 
 
-We will describe each step in detail.
+The entire functionality of (1) and (2) is provided via the usage of [pipeline.py](../../src/cv/ssci/scripts/pipeline.py).
 
-### 1. Object Detection
-Need to find this script from the repo somewhere, its' not currently in UrbanECG, but somewhere else. 
 
-### 2. Aggregation 
-Also need to find this script from whatever repo it is in.
 
 
 
