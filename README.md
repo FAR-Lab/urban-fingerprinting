@@ -3,7 +3,7 @@ This repo contains FARLAB's code and materials on ongoing work with the idea of 
 
 This work is supported by Nexar Inc., who provides the anonymized dashboard camera image data that we work with. 
 
-## Toolkit for Estimating Mobility Densities from Visual Footage
+## Toolkit for Estimating Mobility Densities from Visual Footage [AutoUI '24]
 - [Small-scale, Custom Instrumentation (SSCI)](docs/guides/ssci.md)
 - [Large-scale Collection & Aggregation (LSCA)](docs/guides/lsca.md)
 
