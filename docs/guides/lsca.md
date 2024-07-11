@@ -29,5 +29,5 @@ When this script finishes processing your input images, you should a nested outp
 It is useful to consolidate the per-image .txt files into an easier-to-process format. We provide this functionality in *src/processing/parse_detections.py*
 
 ### 2. Loading a Road Graph 
-Finally, the detectionr results from each image are merged onto a road graph *G* via functionality in *src/analysis/graph.py*. 
+Finally, the detection results from each image are merged onto a road graph *G* via functionality in *src/analysis/graph.py*. 
 
