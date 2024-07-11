@@ -5,7 +5,7 @@ This approach utilizes visual data taken at a smaller-scale, using consumer devi
 
 
 ### Sample Data: NYC GoPro Footage 
-From FARLAB's cross-cultural pedestrian behavior work, we provide a short sample of footage taken by a participant during their daily commute. This footage is recorded with a GoPro action camera, producing high-resolution 4K video. As mentioned in our paper, gathering accurate telemetry data using only a GoPro is infeasible; we provide instructions for replicating our OpenHaystack-based Apple Airtag solution in the [XXX](LINK) section. Sample footage is available at [this](https://cornell.box.com/v/urban-fingerprinting-sample) link, through Box. 
+From FARLAB's cross-cultural pedestrian behavior work, we provide a short sample of footage taken by a participant during their daily commute. This footage is recorded with a GoPro action camera, producing high-resolution 4K video. As mentioned in our paper, gathering accurate telemetry data using only a GoPro is infeasible; something like an OpenHayStack-attached airtag will need to deployed in supplement, as described in our paper. Sample footage is available at [this](https://cornell.box.com/v/urban-fingerprinting-sample) link, through Box. 
 
 
 ## Processing 
@@ -20,9 +20,4 @@ The user provides a .mp4 or comparable video file that they wish to filter for r
 
 Then, the script runs several processing passes using three different models: [YOLOv7-E6E](https://github.com/WongKinYiu/yolov7) for traffic light & stop sign detection, [CDNet](https://github.com/zhangzhengde0225/CDNet) for zebra crosswalk detection, and a custom-trained shadow detection model, using the [SAMAdapter](https://github.com/tianrun-chen/SAM-Adapter-PyTorch) backbone trained on the [CUHK-Shadow](https://github.com/xw-hu/CUHK-Shadow/tree/master) dataset. 
 
-
-
-
-
-
-## A. Geographic Localization with AirTag
+Finally, clips with signs of intersections (like traffic lights or zebra crosswalks) are aggregated and merged, and the relevant video clips are saved ot the disk. 
